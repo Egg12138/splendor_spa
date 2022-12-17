@@ -1,11 +1,20 @@
 // lib.rs 
 // define data structs
+// TODO: 一定找到一个存储HashMap的好的方式
+// 我们总是存储卡牌和贵族的Cid/Nid
 #![allow(dead_code)]
+
+use crate::utils::shuffle;
+
 use serde::{Deserialize, Serialize};
 use core::fmt;
-use std::fmt::{Display, Formatter};
+use std::fmt::Display;
 use std::collections::HashMap;
 
+// id of a card
+type Cid = u16;
+// id of a noble
+type Nid = u16;
 
 const BLUE: &str = "\u{1F48E}";
 const RED: &str = "\u{1F534}";
@@ -14,6 +23,7 @@ const GREEN: &str = "\u{1F7E2}";
 const WHITE: &str = "\u{26AA}";
 const GOLD: &str = "\u{1F48E}";
 
+// Make a solution for the cards pool
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Hash, Eq, Clone)]
 pub enum Color {
@@ -51,7 +61,6 @@ pub struct Card {
 }
 
 
-
 impl Card {
 
 
@@ -64,6 +73,15 @@ impl Card {
 				level: 2,
 			}
 		} 
+
+	pub fn new(score: u8, color: Color, costs: CostMap, level: u8) -> Self {
+		Card {
+			score: score,
+			color: color,
+			cost: costs,
+			level: level
+		}	
+	}
 
 	pub fn level(&self) -> u8 {
 		self.level
@@ -80,8 +98,6 @@ impl Card {
 	pub fn cost(&self) -> CostMap {
 		self.cost.clone()
 	}
-
-
 
 }
 
@@ -139,10 +155,13 @@ impl CostMap {
 	/// # Examples
 	///
 	/// ```rust
-	/// use splendor_rs::CostMap;
-	///
-	/// let mut cost_map = Costap::new();
-	/// /* ---snip---  */
+	/// use splendor_rs::{ Color, CostMap};
+	/// 
+	/// let mut cost_map = CostMap::new();
+	/// let color = Color::Red;
+	/// let color1 = Color::Green;
+	/// let cost = 2;
+	/// let cost1 = 3;
 	/// //你可以这样：
 	/// let result = cost_map
 	/// 		.insert(color, cost)
@@ -194,3 +213,66 @@ impl CostMap {
 		println!("");
 	}
 }
+
+
+#[derive(Deserialize, Serialize)]
+pub struct Deck {
+	level: u8,
+	pub rest_decks: Vec<Cid>, 
+	capacity: usize,
+	len: usize,
+}
+
+
+impl Deck {
+
+	pub fn new(level: u8) -> Self {
+		Deck {
+			level: level,
+			rest_decks: shuffle::get_cards_from_csv("./"), 
+			capacity: 40,
+			len: 1,
+		}
+
+	}
+
+	pub fn level(&self) -> u8 {
+		self.level
+	}
+
+	pub fn capacity(&self) -> usize {
+		self.capacity
+	}
+
+	pub fn rest_len(&self) -> usize {
+		self.len
+	}
+
+	pub fn is_empty(&self) -> bool {
+		self.len == 0
+	}
+
+
+	#[inline]
+	pub fn pop(&mut self) -> Option<Card> {
+		if self.is_empty() {
+			None
+		} else {
+	// TODO: Finish the return card
+			self.len -= 1;
+			let card_index = self.rest_decks.pop().unwrap();
+			Some(Card::demo(Color::Black))
+			// Some(cards_pool.get(card_index))
+		}
+	}
+
+	pub fn push(&mut self, id: Cid) {
+		self.rest_decks.push(id);
+	}
+
+	pub fn shuffle(&mut self) {
+		shuffle::shuffle_deck(self);
+	}
+
+}
+
