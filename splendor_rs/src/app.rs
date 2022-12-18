@@ -2,26 +2,31 @@
 // define data structs
 // TODO: 一定找到一个存储HashMap的好的方式
 // 我们总是存储卡牌和贵族的Cid/Nid
+// 一些基本的数据结构
 #![allow(dead_code)]
-
-use crate::utils::shuffle;
 
 use serde::{Deserialize, Serialize};
 use core::fmt;
+// use std::convert::TryInto;
 use std::fmt::Display;
-use std::collections::HashMap;
 
 // id of a card
-type Cid = u16;
+pub type Cid = usize;
 // id of a noble
-type Nid = u16;
+pub type Nid = usize;
 
-const BLUE: &str = "\u{1F48E}";
-const RED: &str = "\u{1F534}";
-const BLACK: &str = "\u{1F7E4}";
-const GREEN: &str = "\u{1F7E2}";
-const WHITE: &str = "\u{26AA}";
-const GOLD: &str = "\u{1F48E}";
+
+// NUMNOBLE, NUMPLAYER之后都可以改成命令行参数，但目前没必要
+pub const NUMNOBLES: usize = 3;
+pub const NUMPLAYERS: usize = 2; 
+pub const NUMCARDS: usize =90;
+
+pub const BLUE: &str = "\u{1F48E}";
+pub const RED: &str = "\u{1F534}";
+pub const BLACK: &str = "\u{1F7E4}";
+pub const GREEN: &str = "\u{1F7E2}";
+pub const WHITE: &str = "\u{26AA}";
+pub const GOLD: &str = "\u{1F48E}";
 
 // Make a solution for the cards pool
 
@@ -48,231 +53,4 @@ impl Display for Color {
 	}
 }
 
-
-/// **WARN**: 我们尽量保证Card实例是不可变的！ 
-/// 因为在游戏中 Card 信息是不变的，且处于安全性（开发时也节省精力），我们将限制 Card 的可变性
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Card {
-	score: u8,
-	color: Color,
-	// cost:  [u8; 5], 
-	cost: CostMap,
-	level: u8,
-}
-
-
-impl Card {
-
-
-/// provide a demo card instant: score = 2, color = user defined, cost = default costmap.
-	pub fn demo(clr: Color) -> Self {
-			Card {
-				score: 2,
-				color: clr, 
-				cost: CostMap::default(), 
-				level: 2,
-			}
-		} 
-
-	pub fn new(score: u8, color: Color, costs: CostMap, level: u8) -> Self {
-		Card {
-			score: score,
-			color: color,
-			cost: costs,
-			level: level
-		}	
-	}
-
-	pub fn level(&self) -> u8 {
-		self.level
-	} 
-
-	pub fn score(&self) -> u8 {
-		self.score
-	}
-
-	pub fn color(&self) -> Color {
-		self.color.clone()
-	}
-
-	pub fn cost(&self) -> CostMap {
-		self.cost.clone()
-	}
-
-}
-
-/**
- * @brief      { 存储一张卡的花费的结构(Unstable) }
- */
-/// `pub struct CostMap` 直接封装了一个 HashMap.当然处于简单之后CostMap也可以直接被替换为一个一维向量来作为卡牌开销的存储
-/// 作为一个封装 HashMap的结构体，它有若干便捷之处（性能上不确定，不知道强化学习这个数据结构的性能敏感度如何）
-/// * 安全地访问 HashMap的键值对
-/// * 提供了pretty-print
-/// * 提供了（或许有用的）返回非零价格（也就是实际的卡牌的价格栏出现的信息）
-/// * 提供了转化为一个Vec的接口
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct CostMap {
-	map: HashMap<Color, u8>, 
-}
-impl Default for CostMap {
-	fn default() -> Self {
-		let costs =	CostMap {
-			map: HashMap::from([
-			 (Color::Black, 0u8), 
-			 (Color::Blue, 0u8), 
-			 (Color::Green, 0u8), 
-			 (Color::Red, 0u8), 
-			 (Color::White, 0u8),
-			])
-		};
-		costs
-}
-}
-
-impl CostMap {	
-	pub fn new() -> Self {
-		CostMap { map: HashMap::new() }
-	}
-
-	pub fn get_cost(&self, color: Color) -> Option<&u8> {
-		self.map.get(&color)
-	}
-
-	/// 
-	/// 直接返回一个&u8数组，作为最简单的一种获得各种宝石开销的方式
-	/// Vec[Idx]: 我们可以按照Enum Color的顺序来检索:Black => idx:0, Bluue => idx: 1, ...
-	pub fn get_cost_vec(&self) -> Vec<&u8> {
-		let costs: Vec<&u8> = self.map.values().collect();
-		costs
-	} 
-
-	/// 返回自身的Option封装
-	pub fn get_cost_map(&self) -> Option<&CostMap> {
-		Some(self)
-	}
-
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use splendor_rs::{ Color, CostMap};
-	/// 
-	/// let mut cost_map = CostMap::new();
-	/// let color = Color::Red;
-	/// let color1 = Color::Green;
-	/// let cost = 2;
-	/// let cost1 = 3;
-	/// //你可以这样：
-	/// let result = cost_map
-	/// 		.insert(color, cost)
-	/// 		.insert(color1, cost1);
-	/// assert_eq!(result.len(), 2);
-	/// ```
-	pub fn insert(&mut self, color: Color, cost: u8) -> &mut CostMap {
-			self.map.insert(color, cost);
-			self
-		}
-
-	pub fn len(&self) -> usize {
-		self.map.len()
-	}
-
-	/// 获得非零价格的宝石开销。
-	/// 这个函数的实现比较笨拙，对性能有不少的额外开销，**慎重使用**
-	pub fn nonzero_costs(&mut self) -> CostMap{
-			let mut res = CostMap::new();
-			for (key, &mut val) in self.map.iter_mut() {
-
-				if val > 0 {
-					let clr = key.clone();
-					println!("{}=>{}", clr, val);
-					res.insert(clr, val);
-				} 
-				
-			}
-			res
-		}
-
-	pub fn contains_key(&self, key: &Color) -> bool {
-		self.map.contains_key(key)
-	}
-
-	pub fn remove(&mut self, key: &Color) -> Option<u8> {
-		self.map.remove(key)
-	} 
-
-	/// # Output:
-	/// like this:
-	/// ```text
-	/// > 0💎 7💎 9🔴 0🟢 0⚪ 0🟤
-	/// ```
-	pub fn pretty_print(&mut self) {
-		for (k, v) in self.map.iter_mut() {
-			print!("{v}{k} ");
-		}
-		println!("");
-	}
-}
-
-
-#[derive(Deserialize, Serialize)]
-pub struct Deck {
-	level: u8,
-	pub rest_decks: Vec<Cid>, 
-	capacity: usize,
-	len: usize,
-}
-
-
-impl Deck {
-
-	pub fn new(level: u8) -> Self {
-		Deck {
-			level: level,
-			rest_decks: shuffle::get_cards_from_csv("./"), 
-			capacity: 40,
-			len: 1,
-		}
-
-	}
-
-	pub fn level(&self) -> u8 {
-		self.level
-	}
-
-	pub fn capacity(&self) -> usize {
-		self.capacity
-	}
-
-	pub fn rest_len(&self) -> usize {
-		self.len
-	}
-
-	pub fn is_empty(&self) -> bool {
-		self.len == 0
-	}
-
-
-	#[inline]
-	pub fn pop(&mut self) -> Option<Card> {
-		if self.is_empty() {
-			None
-		} else {
-	// TODO: Finish the return card
-			self.len -= 1;
-			let card_index = self.rest_decks.pop().unwrap();
-			Some(Card::demo(Color::Black))
-			// Some(cards_pool.get(card_index))
-		}
-	}
-
-	pub fn push(&mut self, id: Cid) {
-		self.rest_decks.push(id);
-	}
-
-	pub fn shuffle(&mut self) {
-		shuffle::shuffle_deck(self);
-	}
-
-}
 
