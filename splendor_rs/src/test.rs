@@ -30,16 +30,16 @@ mod tests {
 	#[test]
 	fn costmap_partialeq() {
 
-		let mut costs = CostMap::default();
+		let mut costs = GemNumMap::default();
 		let new_color = Color::Blue;
 		let new_black = Color::Black;
 		costs.insert(new_color, 3);
 		costs.insert(new_black, 2);
-		assert_eq!(&mut costs, CostMap::default()
+		assert_eq!(&mut costs, GemNumMap::default()
 							.insert(Color::Blue, 3)
 							.insert(Color::Black, 2)
 				);
-		assert_eq!(&mut costs.nonzero_costs(), CostMap::new()
+		assert_eq!(&mut costs.nonzero_costs(), GemNumMap::new()
 							.insert(Color::Blue, 3)
 							.insert(Color::Black, 2)
 				);
@@ -48,7 +48,7 @@ mod tests {
 
 	#[test]
 	fn cost_map_works() {
-		let mut cost = CostMap::default(); 
+		let mut cost = GemNumMap::default(); 
 		let black = Color::Black;
 		let blue = Color::Blue;
 		let red = Color::Red;
@@ -84,7 +84,7 @@ mod tests {
 	} 
 
 	fn cost_map_get_works() {
-		let costs = CostMap::default();
+		let costs = GemNumMap::default();
 		if let Some(get_costs) = costs.get_cost_map() {
 			assert_eq!(get_costs.len(), 5);
 		}
@@ -107,7 +107,7 @@ mod tests {
 	fn card_and_noble_partialeq_works() {
 		let card = Card::from_arr([1, 1, 0, 0, 2, 1, 1, 1]).unwrap();
 		let noble = Noble::demo();
-		let cmp_costmap = CostMap::from_arr_ref(&[0u8, 0u8, 2u8, 1u8, 1u8]);
+		let cmp_costmap = GemNumMap::from_arr_ref(&[0u8, 0u8, 2u8, 1u8, 1u8]);
 		assert_eq!(noble, Noble { requirement: cmp_costmap.clone() });	
 		assert_eq!(card, Card::new(1, Color::Black, cmp_costmap, 1));
 	}
@@ -121,7 +121,7 @@ mod tests {
 	}
 
 	#[test]
-	fn csv_io_works() {
+	fn from_csv2arr_into() {
 		use utils::fileio::*;
 		let cardscsv = "../cards.csv";
 		let noblescsv = "../nobles.csv";
@@ -134,9 +134,9 @@ mod tests {
 				.unwrap_or_default();
 		assert_eq!(nobles_pool.len(), 10);
 		assert_eq!(cards_pool.get(3), Some(Card::from_arr([0,4,0,0,2,1,0,1]).unwrap()).as_ref());
-		assert_eq!(cards_pool.get(14), Some(Card::new(1,Color::White,CostMap::from_arr_ref(&[0u8, 0u8,0u8,0u8,4u8]),1)).as_ref());
+		assert_eq!(cards_pool.get(14), Some(Card::new(1,Color::White,GemNumMap::from_arr_ref(&[0u8, 0u8,0u8,0u8,4u8]),1)).as_ref());
 		assert_eq!(nobles_pool.get(9), Some(&Noble::from_arr_unwrap([3,3,0,0,3])));
-		let mut map = CostMap::default();
+		let mut map = GemNumMap::default();
 		map.insert(Color::Black, 3)
 			.insert(Color::Blue, 3)
 			.insert(Color::Green, 0)
@@ -146,15 +146,32 @@ mod tests {
 		assert_eq!(nobles_pool.get(9)	, Some(&Noble { 
 									requirement: map
 								}));
-		for card in cards_pool.into_iter()	{	
-			println!("{}", card);
-		}
-		for noble in nobles_pool.into_iter() {
-			println!("{}", noble);
-		}
+
 
 	}
 
+	#[test]
+	fn from_csv2str() {
+		use utils::fileio;
+		let nobles = fileio::read_into_noblespool("../nobles.csv");
+		fileio::noble_print(nobles.unwrap_or_default(), 2);
+	}
+
+
+	#[test]
+	fn player_spend_works() {
+		let mut p0 = Player::init(0);
+		let mut p1 = Player::init(1);
+		assert_eq!(p0.once_pick_max() * p1.once_pick_max(), 9);
+
+	}
+
+	#[test]
+	fn player_picked_gems_works() {
+
+		// 假设数量超过7来测试
+
+	}
 
 	#[ignore]
 	// #[test]

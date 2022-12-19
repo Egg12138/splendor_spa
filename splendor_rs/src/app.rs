@@ -30,7 +30,7 @@ pub const GOLD: &str = "\u{1F48E}";
 
 // Make a solution for the cards pool
 
-#[derive(PartialEq, Debug, Serialize, Deserialize, Hash, Eq, Clone, Copy	)]
+#[derive(PartialEq, Debug, Serialize, Deserialize, Hash, Eq, Clone, Copy)]
 pub enum Color {
 	Black,
 	Blue,
@@ -51,6 +51,49 @@ impl Display for Color {
 			Self::Gold => { write!(f, "{}", GOLD)},
 		}
 	}
+}
+
+// TODO: 可以使用compiled_data来创建全局数据了
+
+/// 游戏状态机
+/// 我们不希望不断地将此状态机传递，所以主要是在状态机内引入玩家结构体和可变区域
+/// 总的牌池数据不会存在在游戏状态机里
+#[derive(Debug, Clone)]
+pub struct GameSM {
+	pub round: usize,
+	/// deck of level Nth developement cards.长度分别为40,30,20
+	pub deck1: Deck,
+	pub deck2: Deck,
+	pub deck3: Deck,
+	pub uncovered1: Deck,
+	pub uncovered2: Deck,
+	pub uncovered3: Deck,
+	pub playerlists: Vec<Player>,
+	pub gemsrested: GemNumMap, 
+	pub goldrested: usize,
+	pub avaliable_nobles: Vec<Noble>,
+}
+
+impl GameSM {
+	/// `GameSM::init`创建了一个部分未初始的游戏状态机 
+	pub fn init() -> Self {
+		GameSM {
+			round: 0,
+			deck1: Deck::new(1),
+			deck2: Deck::new(2),
+			deck3: Deck::new(3),
+			uncovered1: Deck::new(1),
+			uncovered2: Deck::new(2),
+			uncovered3: Deck::new(3),
+			playerlists: Vec::from([Player::init(0), Player::init(1)]),
+			gemsrested: GemNumMap::from_arr_ref(&[7,7,7,7,7]),
+			goldrested: 5,
+			avaliable_nobles: Vec::new(),
+		}	
+	}
+
+
+
 }
 
 

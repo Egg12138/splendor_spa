@@ -3,8 +3,7 @@
 
 use crate::utils::{shuffle, self};
 use crate::app::{
-	Color, NUMCARDS,
-	Cid,
+	Color, DECK1, DECK2, DECK3,
 };
 use serde::{Deserialize, Serialize};
 use std::io::Result;
@@ -202,8 +201,8 @@ impl CostMap {
 
 	/// 获得非零价格的宝石开销。
 	/// 这个函数的实现比较笨拙，对性能有不少的额外开销，**慎重使用**
-	pub fn nonzero_costs(&mut self) -> CostMap{
-			let mut res = CostMap::new();
+	pub fn nonzero_costs(&mut self) -> GemNumMap {
+			let mut res = GemNumMap::new();
 			for (key, &mut val) in self.map.iter_mut() {
 
 				if val > 0 {
@@ -253,9 +252,8 @@ impl Deck {
 	pub fn new(level: u8) -> Self {
 		Deck {
 			level,
-			// TODO: Remove the stupid expression below!
-			rest_decks: crate::utils::fileio::read_into_cardspool("./cards.csv").unwrap(),
-			capacity: 40,
+			rest_decks: Vec::new(),
+			capacity: match level { 1 => DECK1, 2 => DECK2, 3 => DECK3, _ => 0},
 			len: 1,
 		}
 
@@ -277,7 +275,6 @@ impl Deck {
 		self.len == 0
 	}
 
-
 	#[inline]
 	pub fn pop(&mut self) -> Option<Card> {
 		if self.is_empty() {
@@ -298,15 +295,10 @@ impl Deck {
 		} else {
 			None
 		}
-
 	}
 
 	pub fn push(&mut self, card: Card) {
 		self.rest_decks.push(card);
-	}
-	// IMPL
-	pub fn push_by_cid(&mut self, id: Cid) {
-			todo!()	
 	}
 
 	pub fn shuffle(&mut self) {
@@ -315,27 +307,3 @@ impl Deck {
 
 }
 
-
-#[derive(Debug)]
-pub struct CardPool {
-	pool: [Card; NUMCARDS], 
-} 
-
-
-impl CardPool {
-
-	pub fn get(&self, idx: usize) -> Option<&Card> {
-		unsafe {
-			Some(self.pool.get_unchecked(idx))
-		}
-	}
-
-
-}
-
-
-impl From<[Card; NUMCARDS]> for CardPool {
-	fn from(arr: [Card; NUMCARDS]) -> CardPool {
-		todo!()
-	}
-}

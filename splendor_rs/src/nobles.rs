@@ -1,7 +1,7 @@
 #![allow(deprecated)]
 use serde::{Deserialize, Serialize};
-use crate::cards::CostMap;
-use crate::app::{Nid, NUMNOBLES};
+use crate::cards::GemNumMap;
+use crate::app::NUMNOBLES;
 
 
 
@@ -9,18 +9,17 @@ use crate::app::{Nid, NUMNOBLES};
 #[derive(Clone)]
 #[derive(Debug)]
 pub struct Noble {
-	pub requirement: CostMap,
+	pub requirement: GemNumMap,
 	// pub id: Nid,
 }
 
 impl Default for Noble	{
 	fn default() -> Self {
 	    	Noble { 
-	    		requirement: CostMap::default() 
+	    		requirement: GemNumMap::default() 
 	    	}
 	}
 }
-
 
 impl std::fmt::Display for Noble {
 
@@ -28,27 +27,30 @@ impl std::fmt::Display for Noble {
 	    	write!(f, "Noble[ {}]", self.requirement)
 	}
 
-
 }
 
 impl Noble {
 	// TODO: 搞一个正确的贵族demo信息
 	pub fn demo() -> Self {
 		Noble { 
-			requirement: CostMap::from_arr_ref(&[0u8, 0u8, 2u8, 1u8, 1u8]), 
+			requirement: GemNumMap::from_arr_ref(&[0u8, 0u8, 2u8, 1u8, 1u8]), 
 			// id: 3 
 		}
 	}
 
 
-	pub fn get_requirement(&self) -> CostMap {
+	pub fn get_requirement(&self) -> GemNumMap {
 		self.requirement.clone()
 	}
 	// TODO: 同样实现一个from_arr
 	/// 和`cards::Card`一样，都是`from_arr`而不是`from_arr_ref`。
 	/// 我们是打算直接将其设计为拿走所有权的形式
 	pub fn from_arr_unwrap(arr: [u8; 5]) -> Noble {
-		Noble { requirement: CostMap::from_arr_ref(&arr) }
+		Noble { requirement: GemNumMap::from_arr_ref(&arr) }
+	}
+
+	pub fn from_arr_requiremap(require_map: GemNumMap) -> Noble {
+		Noble { requirement: require_map }
 	}
 
 }
@@ -88,7 +90,7 @@ impl NobleList {
 	}
 
 
-	pub fn get_requirement(&self, idx: usize) -> Option<CostMap> {
+	pub fn get_requirement(&self, idx: usize) -> Option<GemNumMap> {
 		if idx >= self.len {
 			None
 		} else {
