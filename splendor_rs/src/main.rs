@@ -5,18 +5,20 @@ mod gems;
 mod player;
 mod nobles;
 pub mod test;
-use utils::shuffle;
+use utils::{fileio, shuffle};
 
 use crate::cards::CardPool;
 
 
 fn main() {
 
-	// if let Ok(cards_pool) = CardPool::from(cards_pool_raw) {
-		
-	// }
 
-	let cards_pool: Vec<cards::Card> = utils::fileio::read_into_cardspool("../cards.csv").unwrap();
-	println!("{:?}", cards_pool);
+	unsafe {
+		let cards_pool  = fileio::read_into_cardspool("../cards.csv").unwrap_unchecked();
+		println!("{:?}", cards_pool);
+		let nobles = fileio::read_into_noblespool("../nobles.csv").unwrap_unchecked();
+		println!("{:?}", nobles);
+		//let nobles_pool: Vec<nobles::Noble> = uitls::fileio::read_into_noblespool("../nobles.csv").unwrap_unchecked();
+	}
 }
 

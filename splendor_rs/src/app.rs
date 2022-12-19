@@ -30,7 +30,7 @@ pub const GOLD: &str = "\u{1F48E}";
 
 // Make a solution for the cards pool
 
-#[derive(PartialEq, Debug, Serialize, Deserialize, Hash, Eq, Clone)]
+#[derive(PartialEq, Debug, Serialize, Deserialize, Hash, Eq, Clone, Copy	)]
 pub enum Color {
 	Black,
 	Blue,

@@ -3,7 +3,7 @@ use crate::app::*;
 use crate::utils;
 use crate::cards::*;
 use crate::nobles::*;
-use crate::gems::*;
+
 
 #[cfg(test)]
 mod tests {
@@ -105,34 +105,53 @@ mod tests {
 
 	#[test]
 	fn card_and_noble_partialeq_works() {
-		let card = Card::from_tuple([1, 1, 0, 0, 2, 1, 1, 1]).unwrap();
+		let card = Card::from_arr([1, 1, 0, 0, 2, 1, 1, 1]).unwrap();
 		let noble = Noble::demo();
 		let cmp_costmap = CostMap::from_arr_ref(&[0u8, 0u8, 2u8, 1u8, 1u8]);
-		assert_eq!(noble, Noble { requirement: cmp_costmap.clone(), id: 3 });	
-		assert_eq!(card, Card::new(1, Color::Blue, cmp_costmap, 1));
+		assert_eq!(noble, Noble { requirement: cmp_costmap.clone() });	
+		assert_eq!(card, Card::new(1, Color::Black, cmp_costmap, 1));
 	}
 
 
 
 
-	#[test]
+	#[ignore]
 	fn shuffle_works() {
-		use rand::seq::SliceRandom;
-
-		let mut deck = Deck::new(1);
-		let cid: u8 = rand::random();
-		deck.push(cid.into());	
-		let cid: u8 = rand::random();
-		deck.push(cid.into());	
-		let cid: u8 = rand::random();
-		deck.push(cid.into());	
-		deck.shuffle();
-		println!("{:?}", deck.rest_decks);
+	//IMPL 需要重新实现
 	}
 
 	#[test]
 	fn csv_io_works() {
-		
+		use utils::fileio::*;
+		let cardscsv = "../cards.csv";
+		let noblescsv = "../nobles.csv";
+		// let noblescsv = "nobles.csv";
+		let cards_pool = read_into_cardspool(cardscsv)
+				.unwrap_or_default();
+
+		assert_eq!(cards_pool.len(), 90);	
+		let nobles_pool = read_into_noblespool(noblescsv)
+				.unwrap_or_default();
+		assert_eq!(nobles_pool.len(), 10);
+		assert_eq!(cards_pool.get(3), Some(Card::from_arr([0,4,0,0,2,1,0,1]).unwrap()).as_ref());
+		assert_eq!(cards_pool.get(14), Some(Card::new(1,Color::White,CostMap::from_arr_ref(&[0u8, 0u8,0u8,0u8,4u8]),1)).as_ref());
+		assert_eq!(nobles_pool.get(9), Some(&Noble::from_arr_unwrap([3,3,0,0,3])));
+		let mut map = CostMap::default();
+		map.insert(Color::Black, 3)
+			.insert(Color::Blue, 3)
+			.insert(Color::Green, 0)
+			.insert(Color::Red, 0)
+			.insert(Color::White, 3);
+		let map = map.clone();
+		assert_eq!(nobles_pool.get(9)	, Some(&Noble { 
+									requirement: map
+								}));
+		for card in cards_pool.into_iter()	{	
+			println!("{}", card);
+		}
+		for noble in nobles_pool.into_iter() {
+			println!("{}", noble);
+		}
 
 	}
 

@@ -1,6 +1,7 @@
+#![allow(deprecated)]
 use serde::{Deserialize, Serialize};
 use crate::cards::CostMap;
-use crate::app::{Nid, Cid, NUMPLAYERS, NUMNOBLES};
+use crate::app::{Nid, NUMNOBLES};
 
 
 
@@ -9,7 +10,25 @@ use crate::app::{Nid, Cid, NUMPLAYERS, NUMNOBLES};
 #[derive(Debug)]
 pub struct Noble {
 	pub requirement: CostMap,
-	pub id: Nid,
+	// pub id: Nid,
+}
+
+impl Default for Noble	{
+	fn default() -> Self {
+	    	Noble { 
+	    		requirement: CostMap::default() 
+	    	}
+	}
+}
+
+
+impl std::fmt::Display for Noble {
+
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	    	write!(f, "Noble[ {}]", self.requirement)
+	}
+
+
 }
 
 impl Noble {
@@ -17,13 +36,28 @@ impl Noble {
 	pub fn demo() -> Self {
 		Noble { 
 			requirement: CostMap::from_arr_ref(&[0u8, 0u8, 2u8, 1u8, 1u8]), 
-			id: 3 
+			// id: 3 
 		}
 	}
+
+
+	pub fn get_requirement(&self) -> CostMap {
+		self.requirement.clone()
+	}
+	// TODO: 同样实现一个from_arr
+	/// 和`cards::Card`一样，都是`from_arr`而不是`from_arr_ref`。
+	/// 我们是打算直接将其设计为拿走所有权的形式
+	pub fn from_arr_unwrap(arr: [u8; 5]) -> Noble {
+		Noble { requirement: CostMap::from_arr_ref(&arr) }
+	}
+
 }
 
 
 /// 表示游戏过程中洗出来的贵族数，默认实现双人游戏，也就是长度为3
+/// 限制了Vec的一些操作。
+/// 之后还是换回Vec<Noble>吧
+#[deprecated]
 #[derive(PartialEq, Eq)]
 pub struct NobleList {
 	nobles: Vec<Noble>,
@@ -53,20 +87,12 @@ impl NobleList {
 		self
 	}
 
-	pub fn get_all_nids(&self) -> Option<Vec<Nid>> {
-		if self.is_empty() {
-			None
-		} else {
-			let nids = self.nobles.iter().map(|n| n.id).collect::<Vec<Nid>>();
-			Some(nids)
-		} 
-	} 
 
 	pub fn get_requirement(&self, idx: usize) -> Option<CostMap> {
 		if idx >= self.len {
 			None
 		} else {
-			Some(self.nobles[idx].requirement.clone())
+			Some(self.nobles.get(idx).unwrap().get_requirement())
 		}
 	} 
 

@@ -1,10 +1,9 @@
 #![allow(dead_code)]
 
 
-use crate::utils::shuffle;
+use crate::utils::{shuffle, self};
 use crate::app::{
-	Color,
-	NUMNOBLES, NUMPLAYERS, BLACK, BLUE, GREEN, RED, WHITE, GOLD, NUMCARDS,
+	Color, NUMCARDS,
 	Cid,
 };
 use serde::{Deserialize, Serialize};
@@ -24,6 +23,13 @@ pub struct Card {
 	level: u8,
 	// id: Cid,
 }
+
+impl std::fmt::Display for Card {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	    writeln!(f, "lv{}{}[{}] {}", self.level, self.color, self.score, self.cost)
+	}
+}
+
 
 
 impl Card {
@@ -49,20 +55,13 @@ impl Card {
 	}
 
 	/// 由于有数据转换，我们在这里返回`Result<Card>`而非 raw `Card`
-	pub fn from_tuple(arg_tuple: [u8; 8]) -> Result<Card> {
+	pub fn from_arr(arg_tuple: [u8; 8]) -> Result<Card> {
 		let score = arg_tuple[0];
 		let color = arg_tuple[1];
-		let color = match color {
-			0 => Color::Black,
-			1 => Color::Blue,
-			2 => Color::Green,
-			3 => Color::Red,
-			4 => Color::White,
-			_ => Color::Gold,
-		};
+		let color = utils::handler::num_to_color(color);
 		// let costmap = CostMap::from_arr_ref(&arg_tuple[2..6]);
 		let costs: &[u8; 5] = arg_tuple[2..7].try_into()
-			.expect("Converting arg_tuple[2..6] into &[u8;5] failed." );
+			.expect("Converting arg_tuple[2..7] into &[u8;5] failed." );
 		let cost = CostMap::from_arr_ref(&costs);
 		let level = arg_tuple[7]; 
 		Ok(Card {
@@ -123,6 +122,20 @@ impl Default for CostMap {
 		costs
 }
 }
+
+impl std::fmt::Display	for CostMap	 {
+		fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+			let mut strs = String::new();
+			let colors = Vec::from([Color::Black, Color::Blue, Color::Green, Color::Red, Color::White]);
+			for clr in colors	{
+				if self.contains_key(&clr) {
+					strs.push_str(&format!("{}{} ", self.get_cost(clr).unwrap(), clr));
+				}
+			}
+			write!(f, "{}", strs)
+		}
+}
+
 
 impl CostMap {	
 	pub fn new() -> Self {
