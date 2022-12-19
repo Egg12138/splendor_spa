@@ -81,6 +81,7 @@ impl NobleList {
 	fn is_empty(&self) -> bool {
 		self.len == 0
 	}
+	
 	pub fn push(mut self, noble: Noble) -> NobleList {
 		if self.len >= 1 {
 			self.nobles.push(noble);

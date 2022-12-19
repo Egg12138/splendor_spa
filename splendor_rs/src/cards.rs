@@ -14,11 +14,12 @@ use std::collections::HashMap;
 /// **WARN**: 我们尽量保证Card实例是不可变的！ 
 /// 因为在游戏中 Card 信息是不变的，且处于安全性（开发时也节省精力），我们将限制 Card 的可变性
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone)]
 pub struct Card {
 	score: u8,
 	color: Color,
 	// cost:  [u8; 5], 
-	cost: CostMap,
+	cost: GemNumMap,
 	level: u8,
 	// id: Cid,
 }
@@ -39,12 +40,12 @@ impl Card {
 			Card {
 				score: 2,
 				color: clr, 
-				cost: CostMap::default(), 
+				cost: GemNumMap::default(), 
 				level: 2,
 			}
 		} 
 
-	pub fn new(score: u8, color: Color, cost: CostMap, level: u8) -> Self {
+	pub fn new(score: u8, color: Color, cost: GemNumMap, level: u8) -> Self {
 		Card {
 			score,
 			color,
@@ -61,7 +62,7 @@ impl Card {
 		// let costmap = CostMap::from_arr_ref(&arg_tuple[2..6]);
 		let costs: &[u8; 5] = arg_tuple[2..7].try_into()
 			.expect("Converting arg_tuple[2..7] into &[u8;5] failed." );
-		let cost = CostMap::from_arr_ref(&costs);
+		let cost = GemNumMap::from_arr_ref(&costs);
 		let level = arg_tuple[7]; 
 		Ok(Card {
 			score,
@@ -84,7 +85,7 @@ impl Card {
 		self.color.clone()
 	}
 
-	pub fn cost(&self) -> CostMap {
+	pub fn cost(&self) -> GemNumMap {
 		self.cost.clone()
 	}
 
@@ -104,12 +105,13 @@ impl Card {
 /// * 提供了转化为一个Vec的接口
 /// * 可以使用Eq比较
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
-pub struct CostMap {
-	map: HashMap<Color, u8>, 
+pub struct GemNumMap {
+	pub map: HashMap<Color, u8>, 
 }
-impl Default for CostMap {
+
+impl Default for GemNumMap {
 	fn default() -> Self {
-		let costs =	CostMap {
+		let costs =	GemNumMap {
 			map: HashMap::from([
 			 (Color::Black, 0u8), 
 			 (Color::Blue, 0u8), 
@@ -122,7 +124,9 @@ impl Default for CostMap {
 }
 }
 
-impl std::fmt::Display	for CostMap	 {
+
+
+impl std::fmt::Display	for GemNumMap	 {
 		fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 			let mut strs = String::new();
 			let colors = Vec::from([Color::Black, Color::Blue, Color::Green, Color::Red, Color::White]);
@@ -136,15 +140,15 @@ impl std::fmt::Display	for CostMap	 {
 }
 
 
-impl CostMap {	
+impl GemNumMap {	
 	pub fn new() -> Self {
-		CostMap { map: HashMap::new() }
+		GemNumMap { map: HashMap::new() }
 	}
 
 	// IMPL: Finish the from arr function
 	/// `from_arr_ref`没必要做`Result`检查，因为对于只有五个字段的`CostMap`，源码选择直接对`arg_arr[0]`->`arg_arr[4]`枚举实现
-	pub fn from_arr_ref(arg_arr: &[u8; 5]) -> CostMap {
-		let mut costmap =  CostMap::new();
+	pub fn from_arr_ref(arg_arr: &[u8; 5]) -> GemNumMap {
+		let mut costmap =  GemNumMap::new();
 		costmap.insert(Color::Black, arg_arr[0])
 			.insert(Color::Blue, arg_arr[1])
 			.insert(Color::Green, arg_arr[2])
@@ -157,6 +161,14 @@ impl CostMap {
 		self.map.get(&color)
 	}
 
+	pub fn total_gemsnum(&self) -> u8 {
+		let result: u8 = self.map.values().map(|&v| v).sum();
+		result	
+	}
+
+	pub fn colors(&self) -> std::collections::hash_map::Keys<Color, u8>	 {
+		self.map.keys()
+	}
 
 	/// 
 	/// 直接返回一个&u8数组，作为最简单的一种获得指定宝石开销的方式
@@ -168,9 +180,10 @@ impl CostMap {
 	} 
 
 	/// 返回自身的Option封装
-	pub fn get_cost_map(&self) -> Option<&CostMap> {
+	pub fn get_cost_map(&self) -> Option<&GemNumMap> {
 		Some(self)
 	}
+
 
 	///
 	/// append a new K-V pair or update an old value of a present key.
@@ -190,7 +203,7 @@ impl CostMap {
 	///        .insert(color1, cost1);
 	/// assert_eq!(result.len(), 2);
 	/// ```
-	pub fn insert(&mut self, color: Color, cost: u8) -> &mut CostMap {
+	pub fn insert(&mut self, color: Color, cost: u8) -> &mut GemNumMap {
 			self.map.insert(color, cost);
 			self
 		}
@@ -219,6 +232,15 @@ impl CostMap {
 		self.map.contains_key(key)
 	}
 
+
+	/// 把某色数量递增1, 返回原值
+	pub fn increment1(&mut self, clr: Color) {
+		let origin = self.get_cost(clr).unwrap();
+		self.insert(clr, *origin + 1);
+	}
+
+	/// 即将移除, 目前看好像用不到这个？
+	#[deprecated]
 	pub fn remove(&mut self, key: &Color) -> Option<u8> {
 		self.map.remove(key)
 	} 
@@ -238,7 +260,7 @@ impl CostMap {
 
 
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Deck {
 	level: u8,
 	pub rest_decks: Vec<Card>, 

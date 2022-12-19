@@ -3,6 +3,7 @@ use crate::app::*;
 use crate::utils;
 use crate::cards::*;
 use crate::nobles::*;
+use crate::player::Player;
 
 
 #[cfg(test)]

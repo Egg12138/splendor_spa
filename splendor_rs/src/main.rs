@@ -7,10 +7,10 @@ mod nobles;
 pub mod test;
 use utils::{fileio, shuffle};
 
-use crate::cards::CardPool;
 
 
 fn main() {
+
 
 
 	unsafe {
