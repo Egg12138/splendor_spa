@@ -7,8 +7,14 @@ use crate::player::Player;
 
 
 #[cfg(test)]
+extern crate test;
+
+
+#[cfg(test)]
 mod tests {
+	
 	use super::*;
+	use test::Bencher;
 
 	#[test]
 	fn colors_pretty_print() {
@@ -118,7 +124,19 @@ mod tests {
 
 	#[ignore]
 	fn shuffle_works() {
-	//IMPL 需要重新实现
+		let mut deck1 = Deck::new(1);
+		let mut deck2 = Deck::new(2);
+		assert_eq!(deck1.rest_len(), DECK1NUM);	
+		assert_eq!(deck2.rest_len(), DECK2NUM);	
+		assert_eq!(deck1.capacity(), DECK1NUM);
+		assert_eq!(deck2.capacity(), DECK2NUM);
+		for card in deck1.rest_decks.into_iter()	{
+			println!("{}",card);
+		}
+
+		for card in deck2.rest_decks.into_iter()	{
+			println!("{}",card);
+		}
 	}
 
 	#[test]
@@ -136,7 +154,7 @@ mod tests {
 		assert_eq!(nobles_pool.len(), 10);
 		assert_eq!(cards_pool.get(3), Some(Card::from_arr([0,4,0,0,2,1,0,1]).unwrap()).as_ref());
 		assert_eq!(cards_pool.get(14), Some(Card::new(1,Color::White,GemNumMap::from_arr_ref(&[0u8, 0u8,0u8,0u8,4u8]),1)).as_ref());
-		assert_eq!(nobles_pool.get(9), Some(&Noble::from_arr_unwrap([3,3,0,0,3])));
+		assert_eq!(nobles_pool.get(9), Some(&Noble::from_arr([3,3,0,0,3])));
 		let mut map = GemNumMap::default();
 		map.insert(Color::Black, 3)
 			.insert(Color::Blue, 3)
@@ -158,13 +176,45 @@ mod tests {
 		fileio::noble_print(nobles.unwrap_or_default(), 2);
 	}
 
+	#[test]
+	fn from_const_arr() {
+		use utils::compiled_data::*;
+		let nobles1: Vec<Noble> = NOBLESARR_POOL.into_iter().map(|a| Noble::from_arr(a)).collect();
+		assert_eq!(nobles1.len(), 10);
+		let nobles2: Vec<Noble> = NOBLESARR_POOL.into_iter().map(|a| Noble::from_arr(a)).collect();
+		assert_eq!(nobles1, nobles2);
+		println!("{:#?}{:#?}", nobles1, nobles2);
+	}
+
+	#[test]
+	fn cards_pool_works() {
+		use utils::handler::*;
+		let cards = get_cardspool();
+		let nobles = get_noblespool();
+	}
 
 	#[test]
 	fn player_spend_works() {
+		use utils::compiled_data::*;
 		let mut p0 = Player::init(0);
 		let mut p1 = Player::init(1);
 		assert_eq!(p0.once_pick_max() * p1.once_pick_max(), 9);
+		p0.picked_gem(Color::Black);
+		p1.picked_gem(Color::Black);
+		assert_eq!(p0.gems, p1.gems);
 
+		if p0.can_reserve() {
+			let reserved_card = Card::demo();
+			let gold_num = 1;
+			p0.reserve_one(reserved_card, gold_num);
+		}
+		assert!(!p0.reach_target());
+		assert!(!p1.round_head());
+		assert_ne!(p0.gold_num, p1.gold_num);
+		p1.get_a_noble();
+		println!("{:#?}{:#?}", p0, p1);
+		// 假设正常购买
+		p0.bought_one(Card::demo());
 	}
 
 	#[test]
@@ -180,6 +230,13 @@ mod tests {
 
 	}
 
+	#[bench]
+	fn benchmark(bencher: &mut Bencher) {
+		bencher.iter(||
+		 // utils::fileio::read_into_cardspool("../cards.csv")
+		 utils::handler::get_cardspool()
+		 );
+	}
 
 
 }

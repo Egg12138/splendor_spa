@@ -5,21 +5,29 @@
 // 一些基本的数据结构
 #![allow(dead_code)]
 
+use crate::nobles::Noble;
+use crate::cards::Deck;
+use crate::player::Player;
+use crate::cards::GemNumMap;
 use serde::{Deserialize, Serialize};
 use core::fmt;
 // use std::convert::TryInto;
 use std::fmt::Display;
 
 // id of a card
-pub type Cid = usize;
-// id of a noble
-pub type Nid = usize;
+pub type Id = usize;
 
 
 // NUMNOBLE, NUMPLAYER之后都可以改成命令行参数，但目前没必要
 pub const NUMNOBLES: usize = 3;
 pub const NUMPLAYERS: usize = 2; 
 pub const NUMCARDS: usize =90;
+
+pub const DECK1NUM: usize = 40;
+pub const DECK2NUM: usize = 30;
+pub const DECK3NUM: usize = 20;
+
+pub const LEVEL_IDX: usize = 7;
 
 pub const BLUE: &str = "\u{1F48E}";
 pub const RED: &str = "\u{1F534}";
@@ -91,6 +99,7 @@ impl GameSM {
 			avaliable_nobles: Vec::new(),
 		}	
 	}
+
 
 
 

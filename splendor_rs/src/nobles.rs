@@ -45,7 +45,7 @@ impl Noble {
 	// TODO: 同样实现一个from_arr
 	/// 和`cards::Card`一样，都是`from_arr`而不是`from_arr_ref`。
 	/// 我们是打算直接将其设计为拿走所有权的形式
-	pub fn from_arr_unwrap(arr: [u8; 5]) -> Noble {
+	pub fn from_arr(arr: [u8; 5]) -> Noble {
 		Noble { requirement: GemNumMap::from_arr_ref(&arr) }
 	}
 

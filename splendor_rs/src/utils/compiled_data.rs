@@ -107,7 +107,7 @@ const CARDS_CSV: &str = r#"score,color,black,blue,green,red,white,level
 "#;
 
 
-const CARDSARR_POOL: [[u8; 8]; 90] = 
+pub const CARDSARR_POOL: [[u8; 8]; 90] = 
 [
 [0,1,0,1,0,0,2,1],
 [0,2,1,0,0,2,0,1],
@@ -201,7 +201,7 @@ const CARDSARR_POOL: [[u8; 8]; 90] =
 [5,5,0,0,7,3,0,3]];
 
 
-const NOBLESARR_POOL: [[u8; 5]; 10] = [
+pub const NOBLESARR_POOL: [[u8; 5]; 10] = [
 
 [0,4,4,0,0],
 [0,0,4,4,0],

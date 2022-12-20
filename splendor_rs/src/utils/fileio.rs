@@ -42,7 +42,7 @@ where P: AsRef<Path>,
 		let mut iter = rdr.deserialize();
 		while let Some(raw_deserde) = iter.next() {
 			let arr_deserde: [u8; 5] = raw_deserde.unwrap_or([0,0,0,0,0]);
-			let noble: Noble = Noble::from_arr_unwrap(arr_deserde);
+			let noble: Noble = Noble::from_arr(arr_deserde);
 			nobles.push(noble);
 		}
 		// assert_eq!(nobles.len(), 10);
@@ -53,12 +53,12 @@ where P: AsRef<Path>,
 } 
 
 
+#[deprecated]
 pub fn noble_print(nobles: Vec<Noble>, mode: usize)  {
 
 	use std::io::stdout;
 	let stdout = stdout();
 	let mut handle = stdout.lock();
-
 	match mode {
 		1 => { 
 		for noble in nobles	{

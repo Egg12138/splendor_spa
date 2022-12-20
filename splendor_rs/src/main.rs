@@ -1,3 +1,5 @@
+
+#![cfg_attr(test, feature(test))]
 mod utils;
 mod app;
 mod cards;

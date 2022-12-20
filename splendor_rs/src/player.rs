@@ -1,3 +1,4 @@
+use crate::nobles::Noble;
 use crate::cards::{Card, GemNumMap};
 use crate::app::{ Id, Color};
 use std::error::Error;
@@ -10,7 +11,7 @@ pub enum Action {
 	Buy,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct Player {
 
 	pub id: Id, 		//0，1，轮次 
@@ -25,7 +26,7 @@ pub struct Player {
 impl Player {
 	/// 二人对战。id为0或1.
 	pub fn init(id: Id) -> Self {
-		Player { id, reserved: Vec::new(), bought: Vec::new(), gems: GemNumMap::new(), score: 0 , gold_num: 0}
+		Player { id, reserved: Vec::new(), bought: Vec::new(), gems: GemNumMap::default(), score: 0 , gold_num: 0}
 	}	
 
 	pub fn can_reserve(&self) -> bool {	self.reserved.len() < 3	}
@@ -35,12 +36,21 @@ impl Player {
 	pub fn reserve_one(&mut self, reserved_card: Card, gold_num: usize) {
 		self.reserved.push(reserved_card);
 		self.gold_num += gold_num;
+	}
 
+	pub fn bonus(&mut self, score: usize) {
+		self.score += score;
 	}
 
 	/// 在判定操作合法后使用，判定逻辑需要参考`struct crate::app::GameSM`
 	pub fn bought_one(&mut self, bought: Card) {
+		let bonus = bought.score().into();
 		self.bought.push(bought);
+		self.bonus(bonus);
+	}
+
+	pub fn get_a_noble(&mut self) {
+		self.bonus(3);
 	}
 
 	/// 返回下一次最多可拿取的宝石数量, 最大为3
@@ -57,7 +67,6 @@ impl Player {
 	/// 不直接返回`u8`.是考虑到`CostMap::get_cost`可能出现错误
 	pub fn picked_gem(&mut self, gemcolor: Color){
 			self.gems.increment1(gemcolor)
-	
 	}
 
 	/// 传入 costmap 数组`[u8; 5]`, 返回总共减少的宝石开销

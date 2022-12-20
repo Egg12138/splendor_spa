@@ -1,13 +1,16 @@
 #![allow(dead_code)]
 
 
-use crate::utils::{shuffle, self};
+use crate::utils::{shuffle, self, compiled_data::*};
 use crate::app::{
-	Color, DECK1, DECK2, DECK3,
+	Color, DECK1NUM, DECK2NUM, DECK3NUM,
 };
+
 use serde::{Deserialize, Serialize};
 use std::io::Result;
 use std::collections::HashMap;
+use std::error::Error;
+
 
 
 
@@ -31,15 +34,25 @@ impl std::fmt::Display for Card {
 }
 
 
+impl Default for Card {
+	fn default() -> Self {
+		Card {
+			score: 0,
+			color: Color::Black,
+			cost: GemNumMap::default(),
+			level: 1,
+		}
+	}
+}
 
 impl Card {
 
 
 /// provide a demo card instant: score = 2, color = user defined, cost = default costmap.
-	pub fn demo(clr: Color) -> Self {
+	pub fn demo() -> Self {
 			Card {
 				score: 2,
-				color: clr, 
+				color: Color::White,
 				cost: GemNumMap::default(), 
 				level: 2,
 			}
@@ -54,16 +67,34 @@ impl Card {
 		}	
 	}
 
+	pub fn frmo_arr_ref(arg_arr: &[u8; 8]) -> Result<Card> {
+		let score = arg_arr[0];
+		let color = arg_arr[1];
+		let color = utils::handler::num_to_color(color);
+		let costs: &[u8; 5] = arg_arr[2..7].try_into()
+				.unwrap_or(&[0,0,0,0,0]);
+		let cost = GemNumMap::from_arr_ref(&costs);
+		let level = arg_arr[7];
+		Ok(Card {
+			score,
+			color,
+			cost,
+			level,
+		})
+
+
+	}
+
 	/// 由于有数据转换，我们在这里返回`Result<Card>`而非 raw `Card`
-	pub fn from_arr(arg_tuple: [u8; 8]) -> Result<Card> {
-		let score = arg_tuple[0];
-		let color = arg_tuple[1];
+	pub fn from_arr(arg_arr: [u8; 8]) -> Result<Card> {
+		let score = arg_arr[0];
+		let color = arg_arr[1];
 		let color = utils::handler::num_to_color(color);
 		// let costmap = CostMap::from_arr_ref(&arg_tuple[2..6]);
-		let costs: &[u8; 5] = arg_tuple[2..7].try_into()
-			.expect("Converting arg_tuple[2..7] into &[u8;5] failed." );
+		let costs: &[u8; 5] = arg_arr[2..7].try_into()
+			.expect("Converting arg_arr[2..7] into &[u8;5] failed." );
 		let cost = GemNumMap::from_arr_ref(&costs);
-		let level = arg_tuple[7]; 
+		let level = arg_arr[7]; 
 		Ok(Card {
 			score,
 			color,
@@ -141,6 +172,7 @@ impl std::fmt::Display	for GemNumMap	 {
 
 
 impl GemNumMap {	
+	/// **NOTE**: 返回的是空表，所以慎用
 	pub fn new() -> Self {
 		GemNumMap { map: HashMap::new() }
 	}
@@ -260,6 +292,7 @@ impl GemNumMap {
 
 
 
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Deck {
 	level: u8,
@@ -268,36 +301,45 @@ pub struct Deck {
 	len: usize,
 }
 
-
 impl Deck {
 
+	#[inline]
 	pub fn new(level: u8) -> Self {
+
+		let (cap, deck) = match level { 
+			1 => {
+				let deck: Vec<Card> = CARDSARR_POOL[0..40].into_iter().map(|arr| Card::frmo_arr_ref(&arr).unwrap_or_default()).collect::<Vec<Card>>();
+				(DECK1NUM, deck)
+				}, 
+			2 => {
+				let deck: Vec<Card> = CARDSARR_POOL[40..70].into_iter().map(|arr| Card::frmo_arr_ref(&arr).unwrap_or_default()).collect::<Vec<Card>>();
+				(DECK2NUM, deck)
+				}, 
+			_ => {
+
+				let deck: Vec<Card> = CARDSARR_POOL[70..90].into_iter().map(|arr| Card::frmo_arr_ref(&arr).unwrap_or_default()).collect::<Vec<Card>>();
+				(DECK3NUM, deck)
+			}
+		};
+
 		Deck {
 			level,
-			rest_decks: Vec::new(),
-			capacity: match level { 1 => DECK1, 2 => DECK2, 3 => DECK3, _ => 0},
-			len: 1,
+			rest_decks: deck,
+			capacity: cap,
+			len: cap,
 		}
-
 	}
 
-	pub fn level(&self) -> u8 {
-		self.level
-	}
+	pub fn level(&self) -> u8 { 	self.level     }
 
-	pub fn capacity(&self) -> usize {
-		self.capacity
-	}
+	pub fn capacity(&self) -> usize { 	self.capacity 	}
 
-	pub fn rest_len(&self) -> usize {
-		self.len
-	}
+	pub fn rest_len(&self) -> usize {	self.len 	}
 
-	pub fn is_empty(&self) -> bool {
-		self.len == 0
-	}
+	pub fn is_empty(&self) -> bool {	self.len == 0 	}
 
-	#[inline]
+	fn is_full(&self) -> bool { self.len == self.capacity }
+
 	pub fn pop(&mut self) -> Option<Card> {
 		if self.is_empty() {
 			None
@@ -305,12 +347,11 @@ impl Deck {
 	// TODO: Finish the return card
 			self.len -= 1;
 			let _index = self.rest_decks.pop().unwrap();
-			Some(Card::demo(Color::Black))
+			Some(Card::demo())
 			// Some(cards_pool.get(card_index))
 		}
 	}
 
-	#[inline]
 	pub fn pop4(&mut self) -> Option<(Card, Card, Card, Card)> {
 		if self.len >= 4 {
 			Some((self.pop().unwrap(), self.pop().unwrap(), self.pop().unwrap(), self.pop().unwrap()))	
@@ -320,12 +361,12 @@ impl Deck {
 	}
 
 	pub fn push(&mut self, card: Card) {
-		self.rest_decks.push(card);
+		if self.is_full() {
+			self.rest_decks.push(card);
+		}
 	}
 
 	pub fn shuffle(&mut self) {
 		shuffle::shuffle_deck(self);
 	}
-
 }
-
