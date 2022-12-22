@@ -122,7 +122,7 @@ mod tests {
 
 
 
-	#[ignore]
+	#[test]
 	fn shuffle_works() {
 		let mut deck1 = Deck::new(1);
 		let mut deck2 = Deck::new(2);
@@ -155,6 +155,9 @@ mod tests {
 		assert_eq!(cards_pool.get(3), Some(Card::from_arr([0,4,0,0,2,1,0,1]).unwrap()).as_ref());
 		assert_eq!(cards_pool.get(14), Some(Card::new(1,Color::White,GemNumMap::from_arr_ref(&[0u8, 0u8,0u8,0u8,4u8]),1)).as_ref());
 		assert_eq!(nobles_pool.get(9), Some(&Noble::from_arr([3,3,0,0,3])));
+        for card in cards_pool.into_iter() {
+            println!("{}", card);
+        }
 		let mut map = GemNumMap::default();
 		map.insert(Color::Black, 3)
 			.insert(Color::Blue, 3)
@@ -183,7 +186,7 @@ mod tests {
 		assert_eq!(nobles1.len(), 10);
 		let nobles2: Vec<Noble> = NOBLESARR_POOL.into_iter().map(|a| Noble::from_arr(a)).collect();
 		assert_eq!(nobles1, nobles2);
-		println!("{:#?}{:#?}", nobles1, nobles2);
+		println!("{:#?}\n{:#?}", nobles1, nobles2);
 	}
 
 	#[test]
@@ -212,7 +215,7 @@ mod tests {
 		assert!(!p1.round_head());
 		assert_ne!(p0.gold_num, p1.gold_num);
 		p1.get_a_noble();
-		println!("{:#?}{:#?}", p0, p1);
+		println!("{:#?}\n{:#?}", p0, p1);
 		// 假设正常购买
 		p0.bought_one(Card::demo());
 	}

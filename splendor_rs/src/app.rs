@@ -34,7 +34,7 @@ pub const RED: &str = "\u{1F534}";
 pub const BLACK: &str = "\u{1F7E4}";
 pub const GREEN: &str = "\u{1F7E2}";
 pub const WHITE: &str = "\u{26AA}";
-pub const GOLD: &str = "\u{1F48E}";
+pub const GOLD: &str = "\u{1F31D}";
 
 // Make a solution for the cards pool
 
