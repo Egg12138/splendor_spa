@@ -20,7 +20,7 @@ const DECK2NUM::UInt8 = 30
 const DECK3NUM::UInt8 = 20
 const TARGET::UInt8 = 15
 const NOBLE_BONUS::UInt8 = 3
-
+ 
 const BLACK_G::Char = '🟤'
 const BLUE_G::Char = '💎'
 const WHITE_G::Char = '⚪'

@@ -1,6 +1,5 @@
 include("play.jl")
 include("const_data.jl")
-include("utils.jl")
 """
 使用Revise是为了保证再我已经`using Splendor`时我更改源文件仍然可以生效
 AI目前是不会记牌的。
@@ -33,4 +32,19 @@ function gamerun()
 
 
 	# end
+end
+
+
+function main_loop(game::Game)
+	while !game_over(game::Game) && game.turn < 10
+		game.turn += 1
+		show_cards_nobles(game.cards_store, game.turn)
+		show_available_gems(game.gems)
+		show_cards_nobles(game.nobles)
+		show_players(game.p0, game.p1)
+		command = readline()
+		# TODO parser
+		# TODO 添加测试用的傻逼决策函数
+	end
+
 end

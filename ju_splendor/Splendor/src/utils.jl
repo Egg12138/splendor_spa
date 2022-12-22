@@ -37,7 +37,7 @@ mutable struct Player
 	actcounter::UInt8
 	"在这里，我们对规则做出调整，我们只限制总的宝石不能超过10个，把黄金排除宝石之列，这样可以少建一些字段"
 	gems::Vector{UInt8}
-	"发展卡颜色数: bought[1] => 黑卡数, bought[2] => 蓝卡数... 1,2,3,4,5 => BLACK, BLUE, GREEN, RED, WHITE"
+	"发展卡颜色数: bought[1] => 绿卡数, bought[2] => 白卡数... 1,2,3,4,5 => GREEN, WHITE, BLUE, BLACK, RED"
 	bought::Vector{UInt8}
 	golds::UInt8
 	scores::UInt8
@@ -56,7 +56,7 @@ a = 0
 using Random
 # 判定函数：
 can_uncover(deck::Vector{Vector{UInt8}}) = length(deck) != 0
-can_reserve(player::Player) = length(player.reserved_num) < 3
+can_reserve(player::Player) = length(player.reserved_num) < MAX_RESERVE
 reach_target(player::Player) = player.scores >= TARGET
 enough(n) = n > 0 
 # turn_over(p1::Player, p2::Player) = p1.actcounter == p2.actcounter
@@ -217,11 +217,11 @@ end
 
 
 
-function infoshow(nobles::Vector{Vector{UInt8}})
+function show_cards_nobles(nobles::Vector{Vector{UInt8}})
 	foreach(n -> pretty_print(n), nobles)	
 end
 
-function infoshow(deck::Matrix{Vector{UInt8}}, turn)
+function show_cards_nobles(deck::Matrix{Vector{UInt8}}, turn)
 	println("ROUND ($turn)\t")
 	split_by_level(1)
 	foreach(c -> pretty_print(c), deck[:, 1])
@@ -229,14 +229,41 @@ function infoshow(deck::Matrix{Vector{UInt8}}, turn)
 	foreach(c -> pretty_print(c), deck[:, 2])
 	split_by_level(3)
 	foreach(c -> pretty_print(c), deck[:, 3])
-	split_row()
 
+end
+
+function show_available_gems(gems::Vector{UInt8})
+	split_row()	
+	print("AVAILABLE GEMS >>")
+	for (idx, num) in enumerate(gems)
+		print(" ($(GEM_COLORS[idx])):$num ")
+	end
+	println("")
+end
+
+function show_players(p0::Player, p1::Player)
+	println("|===========P1===========><===========P2===========|")
+	for idx in 1:5
+		println("|	    $(p0.gems[idx])            $(GEM_COLORS[idx])           $(p1.gems[idx])	  	  |")
+		# |===========P1===========><===========P2===========|
+		# |           0            🟢           0            |
+	end
+	for idx in 1:5
+		print("$(p0.bought[idx])$(CARD_COLORS[idx])  ")
+	end
+	print(" | ")
+	for idx in 1:5
+		print("$(p1.bought[idx])$(CARD_COLORS[idx])  ")
+	end
+	println("")
+	split_row()
 end
 
 # TODO: 改成宏
 function split_by_level(lv)
 	println("=[$lv 级卡]==========================================================")
 end
+
 
 function split_row()
 	println("===================================================================")
