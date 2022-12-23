@@ -1,4 +1,6 @@
 
+const buy_regex::Regex =  r"[Bb].*\s+([1-5][1-4])" 
+const pick_regex::Regex = r"[Pp].*\s+([1-5]{1,3})"
 const NOBLE_CLOSED_ROUND::UInt8 = 13
 
 const GOLD::UInt8 = 6

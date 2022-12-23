@@ -1,3 +1,4 @@
+include("const_data.jl")
 # 状态机操作函数定义
 # Julia, Fortran, Matlab, R等语言采用数组的列优先内存访问
 """
@@ -46,17 +47,34 @@ mutable struct Player
 	reserved_cards::Vector{UInt8}
 	reserved_num::UInt8
 end
-
-PlayerInitial(cnt) = Player(cnt, clrmap(), clrmap(), 0, 0, 0, res_init(), 0)
-function Increment(p::Player, score)  
-	p.score += score
+mutable struct Game
+	gems::Vector{UInt8}			 		# 5-elements of Vec{u8}
+	nobles::Vector{Vector{UInt8}}		 		# 3-elements of Vec{Vec{u8}}
+	# decks::Vector{Vector{Vector{UInt8}}} # 因为长度不等
+	deck1::Vector{Vector{UInt8}} 		# 40-elements of Vec{Vec{u8}}
+	deck2::Vector{Vector{UInt8}} 		# 30-elements of Vec{Vec{u8}}
+	deck3::Vector{Vector{UInt8}} 		# 20-elements of Vec{Vec{u8}}
+	cards_store::Matrix{Vector{UInt8}}  # 4*3 Matrix, cards_store[:, N] to get Nth level cards Vec{UInt8}
+	turn::UInt64 						# Game turn number
+	p0::Player
+	p1::Player
 end
 
-a = 0
+
+PlayerInitial(cnt) = Player(cnt, clrmap(), clrmap_init(), 0, 0, 0, res_init(), 0)
+function increment(p::Player, score)  
+	p.scores += score
+end
+
+@enum Action Pick=1 Buy=2 
 using Random
 # 判定函数：
+card_available(store::Matrix{Vector{UInt8}}, level, idx) = store[idx, level][LVLIDX] != 0
 can_uncover(deck::Vector{Vector{UInt8}}) = length(deck) != 0
 can_reserve(player::Player) = length(player.reserved_num) < MAX_RESERVE
+can_pick_double(gems::Vector{UInt8}, clridx) = gems[clridx] > 4 
+can_pick_it(gems::Vector{UInt8}, clridx) = gems[clridx] >= 1
+unique_ele(sq::Array{Int}) = length(Set(sq)) == length(sq)
 reach_target(player::Player) = player.scores >= TARGET
 enough(n) = n > 0 
 # turn_over(p1::Player, p2::Player) = p1.actcounter == p2.actcounter
@@ -76,18 +94,17 @@ function handle_noble_sponse!(player::Player, nobles_list::Vector{Vector{UInt8}}
 			deleteat!(nobles_list, id)
 		end
 	end
-
 end
 
 # 暂时不考虑黄金
 "一种解决办法是提供给玩家有限的支付方式的选项，但是这样让应该会AI比较难受"
-function affort(player::Player, card::Vector{UInt8})
-	delta = _Δrequirement(player.gems, card)
+function affortable(player::Player, card::Vector{UInt8})
+	delta = _Δrequirement(convert(Vector{Int64}, player.gems), card[1:5])
 	sum(delta) <= 0 
 end
 
 # private functions
-function _Δrequirement(data::Vector{UInt8}, req::Vector{UInt8})
+@fastmath function _Δrequirement(data::Vector{Int64}, req::Vector{UInt8})
 	@assert (length(data) == length(req))
 	Δ = req - data
 	Δ[Δ.<=0] .= 0
@@ -106,14 +123,16 @@ function max_pick_num(player)
 	(player.gems <= 7) ? 3 : (MAX_GEMS - player.gems )
 end
 # 状态机更新
-# 引入动作
-@enum Action OneColor=1 DiffColor=2 Buy=3 Reserve=4
 
-gems_area_reset() = 7 * ones(UInt8, 5)
-function won_a_noble(player::Player)
+gems_area_reset() = GEMFULL_NUM * ones(UInt8, 5)
+function bought_a_new_card!(p::Player, card::Vector{UInt8})
+	p.cards_num += 1
+	p.bought[card[COLORIDX]] += 1
+	increment(p, card[SCOREIDX])
+end
+function won_a_noble!(player::Player)
 	increment(player, NOBLE_BONUS)
 end
-
 
 
 """
@@ -145,9 +164,12 @@ end
 
 """ 将一张卡填充为0完成remove
 这里不能删去他们，因为
+返回被卖的卡
 """
 function _remove_one_from_store!(store, level, idx)
+	bought = store[idx, level]
 	store[idx, level] = zeros(UInt8, 8)
+	bought
 end
 
 function _a_new_card_uncovered!(store, level, idx, newcard::Vector{UInt8})
@@ -174,21 +196,64 @@ end
 """
 function cards_store_reset!(d1, d2, d3)
 	println("Store init...")
-	println("$(d1) = $(d2) = $(d3)")
 	
 	level1 = uncover4!(d1)
 	level2 = uncover4!(d2)
 	level3 = uncover4!(d3)
 	[level1 level2 level3]
 end
-"Color map vector"
-clrmap() = zeros(UInt8, 5)
+
+function gems_area_update!(game::Game, δmap::Vector{UInt8})
+	@assert length(δmap) == 5 "Gems updater has a wrong length."
+	game.gems += δmap
+end 
+
+function gems_update!(game::Game, clr, δ)
+	@assert 1 <= clr <= 5 "[gems update]Color index should be in [1:5]"
+	game.gems[clr] += δ
+end
+
+function player_gems_update!(p::Player, clr, δ)
+	@assert 1 <= clr <= 5 "[player update]Color index should be in [1:5]"
+	p.gems[clr] += δ
+end
+
+"Initialize the color-num map vector"
+clrmap() = ones(UInt8, 5) * 30
+clrmap_init() = zeros(UInt8, 5)
 res_init() = zeros(UInt8, MAX_RESERVE)
 global_gems_init() = 7 * ones(UInt8, 5)
 
-function take_action(player::Player)
+
+
+function handle_action(player::Player, game::Game)
 	#IMPL: Finish
+	while not_over
+		command = readline()
+		res_buy = match(buy_regex, command)
+		res_pick = match(pick_regex, command) 
+		if !res_buy === nothing
+			level, idx = parse_buy(command)
+			if buy_card_success(player, game, level, idx)
+				println("Bought successfully")
+				break 
+			else
+				println("Cannot buy the card")
+			end
+		elseif !res_pick === nothing
+			gems_tuple = parse_pick(command)
+			break
+		else 
+			println("Failed to parse the command. Enter again:")
+		end
+	end
 end
+
+"返回卡牌的(level, idx)"
+function parse_buy(command::String)
+	(true, false)
+end
+
 
 # TODO: 纵向分割的排版十分重要
 function pretty_print(colors::Vector{UInt8})
@@ -224,11 +289,11 @@ end
 function show_cards_nobles(deck::Matrix{Vector{UInt8}}, turn)
 	println("ROUND ($turn)\t")
 	split_by_level(1)
-	foreach(c -> pretty_print(c), deck[:, 1])
+	@fastmath  @inbounds foreach(c -> pretty_print(c), deck[:, 1])
 	split_by_level(2)
-	foreach(c -> pretty_print(c), deck[:, 2])
+	@fastmath  @inbounds foreach(c -> pretty_print(c), deck[:, 2])
 	split_by_level(3)
-	foreach(c -> pretty_print(c), deck[:, 3])
+	@fastmath  @inbounds foreach(c -> pretty_print(c), deck[:, 3])
 
 end
 
@@ -242,7 +307,7 @@ function show_available_gems(gems::Vector{UInt8})
 end
 
 function show_players(p0::Player, p1::Player)
-	println("|===========P1===========><===========P2===========|")
+	println("|===========P1[$(p0.scores)]=======><=======[$(p1.scores)]P2===========|")
 	for idx in 1:5
 		println("|	    $(p0.gems[idx])            $(GEM_COLORS[idx])           $(p1.gems[idx])	  	  |")
 		# |===========P1===========><===========P2===========|
@@ -269,3 +334,36 @@ function split_row()
 	println("===================================================================")
 end
 
+"返回字符串的解析指令"
+function cmd_parse(input::String)
+
+	# parse
+
+	# 相似指令 推荐
+
+end
+
+"Based on Hamming Distance"
+function str_similar_index(a::String, b::String)
+	if length(a) == 0 && length(b) == 0
+		1
+	end
+	if length(a) == 0 || length(b) == 0
+		0
+	end
+	if length(a) != length(b)
+		len_coff = 0.88
+	else
+		len_coff = 1
+	end
+	# avec = Vector{Char}(a)
+	# bvec = Vector{Char}(b)
+	aset = Set(a)
+	bset = Set(b)
+	intersection_num = length(aset ∩ bset)
+	if intersection_num == 0
+		0
+	end
+	union_num = length(aset ∪ bset)
+	float((intersection_num / union_num)*len_coff)
+end
