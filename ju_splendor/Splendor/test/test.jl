@@ -1,22 +1,21 @@
 module Tst
-	include("../src/Splendor.jl")
 	include("../src/utils.jl")
-	import .Splendor
-	games_area = gems_area_reset()
-	nobles_area = nobles_reset()
-	(deck1, deck2, deck3) = shuffle_decks_from_cardspool()
-	cards_store = cards_store_reset!(deck1, deck2, deck3)
-	println("\n\ncards store: $cards_store")
-	println("\n LV1 :$(cards_store[:,1])")
-	println("\n LV2 :$(cards_store[:,2])")
-	println("\n LV3 :$(cards_store[:,3])")
-	println(games_area)
-	for i in 1:40 
-		buy_store_update!(cards_store, deck1, 1, rand((1, 4)));
-		println("\n LV1 :$(cards_store[:,1])")
+	ps1 = "pick 1,2,3"
+	ps2 = " p 1,2,3,"
+	ps3 = " p 1,2,"
+	ps4 = "p 1,2"
+	ps5 = "pic 1,2,3,4"
+	psm1 = match(pick_regex, ps1)	
+	psm2 = match(pick_regex, ps2)	
+	psm3 = match(pick_regex, ps3)	
+	psm4 = match(pick_regex, ps4)	
+	psm5 = match(pick_regex, ps5)	
+	if psm1 !== nothing && psm2 !== nothing && psm3 !== nothing && psm4 !== nothing && psm5 !== nothing
+		@assert parse_pick(psm1) == (1,2,3)
+		@assert parse_pick(psm2) == (1,2,3)
+		@assert parse_pick(psm3) == (1,2)
+		@assert parse_pick(psm4) == (1,2)
+		@assert parse_pick(psm5) == (1,2,3)
 	end
-	Splendor.greet()
-	p0 = PlayerInitial(0);
-	p1 = PlayerInitial(1);
-	println(p0)
+
 end

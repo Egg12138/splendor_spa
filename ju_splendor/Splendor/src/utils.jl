@@ -34,12 +34,11 @@ include("const_data.jl")
 因为Player在这里承担了状态机功能，所以它必须是可变的
 """
 mutable struct Player
-	"我们不再使用玩家id来存储行动顺序的信息，我们改记为行动次数，这样也方便做反馈"
-	actcounter::UInt8
+	id::UInt8
 	"在这里，我们对规则做出调整，我们只限制总的宝石不能超过10个，把黄金排除宝石之列，这样可以少建一些字段"
 	gems::Vector{UInt8}
 	"发展卡颜色数: bought[1] => 绿卡数, bought[2] => 白卡数... 1,2,3,4,5 => GREEN, WHITE, BLUE, BLACK, RED"
-	bought::Vector{UInt8}
+	bought::Vector{UInt8}		# bought + gems
 	golds::UInt8
 	scores::UInt8
 	"在第一次比较平分时，发展卡数量更少的玩家获胜"
@@ -61,8 +60,8 @@ mutable struct Game
 end
 
 
-PlayerInitial(cnt) = Player(cnt, clrmap(), clrmap_init(), 0, 0, 0, res_init(), 0)
-function increment(p::Player, score)  
+PlayerInitial(id) = Player(id, clrmap(), clrmap_init(), 0, 0, 0, res_init(), 0)
+function score_add!(p::Player, score)  
 	p.scores += score
 end
 
@@ -74,24 +73,24 @@ can_uncover(deck::Vector{Vector{UInt8}}) = length(deck) != 0
 can_reserve(player::Player) = length(player.reserved_num) < MAX_RESERVE
 can_pick_double(gems::Vector{UInt8}, clridx) = gems[clridx] > 4 
 can_pick_it(gems::Vector{UInt8}, clridx) = gems[clridx] >= 1
-unique_ele(sq::Array{Int}) = length(Set(sq)) == length(sq)
+unique_ele(sq::Vector{UInt8}) = length(Set(sq)) == length(sq)
 reach_target(player::Player) = player.scores >= TARGET
 enough(n) = n > 0 
 # turn_over(p1::Player, p2::Player) = p1.actcounter == p2.actcounter
 # 后手有一点点的微弱补偿
 function winner(p1::Player, p2::Player)
-	( p1.score > p2.score) ?
-	 ( p1 ) : ( (p1.score < p2.score) ? 
+	( p1.scores > p2.scores) ?
+	 ( p1 ) : ( (p1.scores < p2.scores) ? 
 	 				( p2 ) : ( p1.cards_num < p2.cards_num ) ? (p1) : (p2) )
 end
 
-function handle_noble_sponse!(player::Player, nobles_list::Vector{Vector{UInt8}})
-	for (id, noble) in enumerate(nobles_list)
-		delta_vec = _Δrequirement(player, noble)
-		if sum(delta_vec) >= 0
-			println("You won noble[$id]")
-			won_a_noble(player)
-			deleteat!(nobles_list, id)
+function handle_noble_sponse!(player::Player, game::Game)
+	for (id, noble) in enumerate(game.nobles)
+		delta_vec = _Δrequirement(convert(Vector{Int}, player.bought), noble)
+		if sum(delta_vec) <= 0
+			println("[LOG]p$(player.id) won the noble[$id], got 3 score.")
+			won_a_noble!(player)
+			deleteat!(game.nobles, id)
 		end
 	end
 end
@@ -99,7 +98,7 @@ end
 # 暂时不考虑黄金
 "一种解决办法是提供给玩家有限的支付方式的选项，但是这样让应该会AI比较难受"
 function affortable(player::Player, card::Vector{UInt8})
-	delta = _Δrequirement(convert(Vector{Int64}, player.gems), card[1:5])
+	delta = _Δrequirement(convert(Vector{Int64}, player.gems+player.bought), card[1:5])
 	sum(delta) <= 0 
 end
 
@@ -118,21 +117,29 @@ function _affort_considering_gold(player::Player,card::Vector{UInt8})
 end
 
 
-"只考虑了玩家自己的状态"
 function max_pick_num(player)
-	(player.gems <= 7) ? 3 : (MAX_GEMS - player.gems )
+	gemsnum = sum(player.gems)
+	(gemsnum <= MAX_GEMS) ? 3 : (MAX_GEMS - gemsnum)
 end
 # 状态机更新
 
 gems_area_reset() = GEMFULL_NUM * ones(UInt8, 5)
+"确认买得起,进行支付和购买后，更新玩家其他信息"
 function bought_a_new_card!(p::Player, card::Vector{UInt8})
 	p.cards_num += 1
 	p.bought[card[COLORIDX]] += 1
-	increment(p, card[SCOREIDX])
+	score_add!(p, card[SCOREIDX])
+end
+function pay!(p::Player, g::Game, costs::Vector{UInt8})
+# costs is a 5-elements vector of uint8
+	after_paid_by_boughtcards = _Δrequirement(convert(Vector{Int64}, p.bought), costs) # 付的掉的位为0，余下的位为正
+	gems_area_update!(g, after_paid_by_boughtcards)	
+	gems_area_update!(p, -after_paid_by_boughtcards)
 end
 function won_a_noble!(player::Player)
-	increment(player, NOBLE_BONUS)
+	score_add!(player, NOBLE_BONUS)
 end
+
 
 
 """
@@ -203,8 +210,8 @@ function cards_store_reset!(d1, d2, d3)
 	[level1 level2 level3]
 end
 
-function gems_area_update!(game::Game, δmap::Vector{UInt8})
-	@assert length(δmap) == 5 "Gems updater has a wrong length."
+function gems_area_update!(game::Game, δmap::Vector{Int})
+	@assert length(δmap) == 5 "delta Gems should be a 5-elements vector of u8 "
 	game.gems += δmap
 end 
 
@@ -213,10 +220,15 @@ function gems_update!(game::Game, clr, δ)
 	game.gems[clr] += δ
 end
 
-function player_gems_update!(p::Player, clr, δ)
+function gems_area_update!(p::Player, δmap::Vector{Int})
+	@assert length(δmap) == 5 "delta Gems should be a 5-elements vector of u8 "
+	p.gems += δmap
+end
+function player_gem_update!(p::Player, clr, δ)
 	@assert 1 <= clr <= 5 "[player update]Color index should be in [1:5]"
 	p.gems[clr] += δ
 end
+
 
 "Initialize the color-num map vector"
 clrmap() = ones(UInt8, 5) * 30
@@ -226,33 +238,6 @@ global_gems_init() = 7 * ones(UInt8, 5)
 
 
 
-function handle_action(player::Player, game::Game)
-	#IMPL: Finish
-	while not_over
-		command = readline()
-		res_buy = match(buy_regex, command)
-		res_pick = match(pick_regex, command) 
-		if !res_buy === nothing
-			level, idx = parse_buy(command)
-			if buy_card_success(player, game, level, idx)
-				println("Bought successfully")
-				break 
-			else
-				println("Cannot buy the card")
-			end
-		elseif !res_pick === nothing
-			gems_tuple = parse_pick(command)
-			break
-		else 
-			println("Failed to parse the command. Enter again:")
-		end
-	end
-end
-
-"返回卡牌的(level, idx)"
-function parse_buy(command::String)
-	(true, false)
-end
 
 
 # TODO: 纵向分割的排版十分重要
@@ -280,8 +265,6 @@ function pretty_print(colors::Vector{UInt8})
 	
 end
 
-
-
 function show_cards_nobles(nobles::Vector{Vector{UInt8}})
 	foreach(n -> pretty_print(n), nobles)	
 end
@@ -307,16 +290,17 @@ function show_available_gems(gems::Vector{UInt8})
 end
 
 function show_players(p0::Player, p1::Player)
-	println("|===========P1[$(p0.scores)]=======><=======[$(p1.scores)]P2===========|")
+	println("|===========P0[$(p0.scores)]==========><==========[$(p1.scores)]P1===========|")
 	for idx in 1:5
-		println("|	    $(p0.gems[idx])            $(GEM_COLORS[idx])           $(p1.gems[idx])	  	  |")
+		println("|            $(p0.gems[idx])            $(GEM_COLORS[idx])           $(p1.gems[idx])	       |")
 		# |===========P1===========><===========P2===========|
 		# |           0            🟢           0            |
 	end
+	print(" | ")
 	for idx in 1:5
 		print("$(p0.bought[idx])$(CARD_COLORS[idx])  ")
 	end
-	print(" | ")
+	print(" || ")
 	for idx in 1:5
 		print("$(p1.bought[idx])$(CARD_COLORS[idx])  ")
 	end
@@ -326,16 +310,16 @@ end
 
 # TODO: 改成宏
 function split_by_level(lv)
-	println("=[$lv 级卡]==========================================================")
+	println("=[$lv 级卡]=======================================================")
 end
 
 
 function split_row()
-	println("===================================================================")
+	println("=================================================================")
 end
 
 "返回字符串的解析指令"
-function cmd_parse(input::String)
+function similar_cmd(input::String)
 
 	# parse
 
@@ -366,4 +350,24 @@ function str_similar_index(a::String, b::String)
 	end
 	union_num = length(aset ∪ bset)
 	float((intersection_num / union_num)*len_coff)
+end
+
+"返回卡牌的(level, idx)"
+function parse_buy(command::RegexMatch)
+	nums = command.captures[1]
+	nums_vec = split(nums, ',')
+	@assert length(nums_vec) == 2  "Buy Level,Id"
+	@. parse(UInt8, nums_vec)
+end
+
+function parse_pick(command::RegexMatch)
+	nums = strip(command.captures[1], [' ', ','])  # strip the ' ' and ',' at the head&tail of captured string 
+	nums_split = split(nums, ',')
+	len = length(nums_split)
+	@assert len == 2 || len == 3 "指令长度异常"
+	@assert isdigit(nums_split[1][1]) && isdigit(nums_split[2][1]) "参数须为数" 
+	if len == 3
+		@assert isdigit(nums_split[3][1]) "第三参非数"
+	end
+	@. parse(UInt8, nums_split)
 end
