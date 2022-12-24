@@ -14,26 +14,33 @@ Splednor is a classical boardgame designed by Marc and Pascal Qyudault.
 ## 施工进度
 
 ### Part1 游戏CLI本体的实现
-* -[] 数据结构设计 (考虑不用C了)
-* -[] 交互设计
-* -[] 基本的CLI界面
-* -[] 完成“无黄金&无贵族”的Demo
-* -[] 完成“有黄金&无贵族”的Demo
-* -[] 完成“有黄金&有贵族”的Demo
+* **Rust Version**(方便未来的联机对战而采用Rust编写)
+* -[1] 数据结构设计 (考虑不用C了)
+* -[1] 交互设计
+* -[1] 基本的CLI界面
+* -[1] 完成“无黄金&无贵族”的Demo
+* -[1] 完成“有黄金&无贵族”的Demo
+* -[0] 完成“有黄金&有贵族”的Demo
+* **Julia Version**(快速版本)
+* -[1] 完成“无黄金和预约”的Demo
+* -[1] 完成命令解析（马上会逸出命令长度异常时手动引入的assert）
+* -[0] 基本指令推荐（相似已写，还未套上去，希望有AI，引入AI操作提示后一起整合进去）
 
 #### 牌的数据结构
 
 思路：
-1. 首先定义`struct Card`, 其内部包含了价格、颜色、等级、分数的信息
-接下来会分化两个思路:
-总牌池结构是固定的: `card_pool: Vec<Card>`, 我们会序列化存储到数据文件中。
-1. 每一张 `struct Card`都添加一个索引字段`cid`表示其独一无二的标志(类似HashMap)。我们将所有的卡按等级分三叠存在牌池向量里: cid就是索引值: 0-L1, L1-L2, L2-L3分别代表lvl1, lvl2, lvl3的卡牌, 使用的使用，
-#### 洗牌算法
-每一张牌我们都有一个card_uid
+1. 首先定义`struct Card`, 其内部包含了价格、颜色、等级、分数的信息,总牌池结构是固定的: `card_pool: Vec<Card>`, 我们会序列化存储到数据文件中。
+1. 或者直接定义`Vec<u8>`来存放牌信息，`Vec<Vec<u8>>`存放牌堆信息，`Matrix<Vec<u8>>`存放牌池，
+
+洗牌算法使用了语言标准库提供的`shuffle`
+
+
+### Part2 CLI游戏和ML模型的API设计与实现
+基于DRL，我们将规则简化为:无限宝石供应（其实影响不大，就是少了几句逻辑）+无预约和金币。
+金币影响也不大，预约影响相对更大。
 
 
 
-### Part2 CLI游戏和模型的API设计与实现
 
 ### Part2.5 训练
 
@@ -52,5 +59,4 @@ Splednor is a classical boardgame designed by Marc and Pascal Qyudault.
 
 ## More...
 
-The latest version of the board game is available now, called `Splendor: Dual`!
 
