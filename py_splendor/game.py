@@ -39,7 +39,7 @@ class Game:
 		# 一维的序列化的棋盘，这一点暗示我们似乎可以用一维卷积操作？
 		self.grid_shape = (1, ACTIONS_NUM) 
 		self.input_shape = (2, 1, ACTIONS_NUM) # two players. two channels
-		self.state_size =  len(self.gameState.binary)
+		self.state_size = len(self.gameState.binary)
 		self.action_size = ACTIONS_NUM
 
 	def reset(self):
@@ -72,9 +72,13 @@ class Player:
 
 	def affortable(self, card_code):
 		delta = self.gems + self.bought - cards_pool[card_code][:5] 
-		return False if delta.any() < 0 else True
+		if all(delta) > 0:
+			return True
+		else:
+			return False
 
-
+	def will_not_overhold(self, num):
+		return False if self.gems.sum()+num > 10 else True
 	def show(self):
 		print(self.id, self.gems, self.score, sep='~\n')
 
@@ -102,7 +106,7 @@ class GameState:
 		):
 		# board就是cards_pool
 		self.board = board
-		self.gems = np.ones(5) * GEMS_EACH_MAX
+		self.gems = np.ones(5, dtype=np.int8) * GEMS_EACH_MAX
 		# self.nobles = nobles   
 		self.playerTurn = playerTurn
 		self.playerlist = [playerTurn, p0, p1]
@@ -130,16 +134,18 @@ class GameState:
 		return action_states_record
 
 	def _allowedActions(self):
-		[ actcode for actcode in range(ACTIONS_NUM) if self._allowed(actcode)]
+		res = [ actcode for actcode in range(ACTIONS_NUM) if self._allowed(actcode)]
+		print(res)
+		return res
 
-	def _not_bought(self, card_code):
-		return False if self.board[card_code][LV_I] == 1 else True
+	def _not_been_bought(self, card_code):
+		return False if self.board[card_code][LV_I] == 0 else True
 
 	def _allowed(self, actcode):
 		assert actcode in range(ACTIONS_NUM)
 		if actcode < 90:
 			# card
-			if self._not_bought(actcode) and self.playerlist[self.playerTurn].affortable(actcode):
+			if self._not_been_bought(actcode) and self.playerlist[self.playerTurn].affortable(actcode):
 				return True
 			else:
 				return False
@@ -206,17 +212,18 @@ class GameState:
 		# 从allowed_action选出,action已经合法
 		if actcode in range(90):
 			assert self.board[actcode][LV_I] != 0
-			self.playerlist[self.playerTurn].buy(self, cards_pool[actcode])
-			self.board[actcode][LV_I] = 0
+			self.playerlist[self.playerTurn].buy(actcode)
+			self.board[actcode][LV_I] = 0 # 标记为已被购买
 		elif actcode < 95:
 			# pick two
 			color = actcode - 90	
 			self.gems[color] -= 2
-			self.playerlist[self.playerTurn].gems[color] += 2	
+			self.playerlist[self.playerTurn].gems[color] += 2
 		else:
-			color_indices = list(it.combinations([0,1,2,3,4], 3))
-			self.gems[color_indices] -= 1
-			self.playerlist[self.playerTurn].gems[color_indices] += 1
+			color_indices = list(it.combinations([0,1,2,3,4], 3))[actcode-95]
+			self.gems[list(color_indices)] -= 1
+			self.playerlist[self.playerTurn].gems[list(color_indices)] += 1
+
 		self.playerlist[self.playerTurn].step_incrmnt(actcode)
 		newState = copy.deepcopy(self)	
 		newState.playerTurn = -self.playerTurn
@@ -236,4 +243,5 @@ class GameState:
 if __name__ == '__main__':
 	g = Game()
 	print(g.gameState.board)
+	print(g.gameState.allowedActions)
 

@@ -74,7 +74,6 @@ class Player:
 		delta = self.gems + self.bought - cards_pool[card_code][:5] 
 		return False if delta.any() < 0 else True
 
-
 	def show(self):
 		print(self.id, self.gems, self.score, sep='~\n')
 
