@@ -1,55 +1,44 @@
 # README
 
-## About this project
-## What is Splendor?
+## 开发文档：
 
-Splednor is a classical boardgame designed by Marc and Pascal Qyudault. 
+由于模型可以适配多个游戏，所以不同游戏的一些逻辑放在games路径下，在根目录下的`game.py`是games路径下的某个游戏文件的`game.py`。
+宝石在`games/splendor`的`splendor.py`中定义。但是与之绑定的还有`raw_config.py`。里面包含了更多的配置和常量信息（懒得分离了）。
+复制到根目录下运行最好改名为`game.py`和`config.py`
+在/py_splendor路径下运行`sh ./begin.sh`，它进行了复制。这样每次更新文件可只在games路径下更新。
 
-## What do we want to do?
+或者保证game.py和config.py的最新后，直接运行main.py
 
-* (EZ)Build an pretty printed CLI-Splendor for two player.
-* (Mid)Train a Reinforcement-learning-based AI for two-player splendor
-* (Future & Hard) Enable remote battle.
+## Splendor-ML
 
-## 施工进度
+### 仓库结构
 
-### Part1 游戏CLI本体的实现
-* **Rust Version**(方便未来的联机对战而采用Rust编写)
-* -[1] 数据结构设计 (考虑不用C了)
-* -[1] 交互设计
-* -[1] 基本的CLI界面
-* -[1] 完成“无黄金&无贵族”的Demo
-* -[1] 完成“有黄金&无贵族”的Demo
-* -[0] 完成“有黄金&有贵族”的Demo
-* **Julia Version**(快速版本)
-* -[1] 完成“无黄金和预约”的Demo
-* -[1] 完成命令解析（马上会逸出命令长度异常时手动引入的assert）
-* -[0] 基本指令推荐（相似已写，还未套上去，希望有AI，引入AI操作提示后一起整合进去）
+### RustCLI-Splendor
 
-#### 牌的数据结构
+选择原因：
+* 文档方便，开发效率高
+* 类型系统完善
+* 如果之后还有兴致的话，适合用此引入联机（内存安全、和Server-Client的性能+文档舒适度……）
 
-思路：
-1. 首先定义`struct Card`, 其内部包含了价格、颜色、等级、分数的信息,总牌池结构是固定的: `card_pool: Vec<Card>`, 我们会序列化存储到数据文件中。
-1. 或者直接定义`Vec<u8>`来存放牌信息，`Vec<Vec<u8>>`存放牌堆信息，`Matrix<Vec<u8>>`存放牌池，
+因为splendor是终端回合制的，所以帧同步可以定为回合同步，这时候可以引入更多的约束，因为我们不需要常常去检查。
 
-洗牌算法使用了语言标准库提供的`shuffle`
+### JuCLI-Splendor
 
+方便编写。专门优化代码后性能比较好。
+**如果时间重组**，我们希望用SplendorML的策略特征来一个有限状态机
 
-### Part2 CLI游戏和ML模型的API设计与实现
-基于DRL，我们将规则简化为:无限宝石供应（其实影响不大，就是少了几句逻辑）+无预约和金币。
-金币影响也不大，预约影响相对更大。
+### QLearning 
+一个QLearning机器学习方法的展示，这是我们进一步开发的基础
+
+### MCTS&&RestNN Simplified-Splendor AI
+方便构建模型和训练和做出demo。
 
 
 
 
-### Part2.5 训练
 
-### Part3 训练报告制作&写文档
-
-### Part4 实现CLI-Splendor中, AI接管对手位
-
-### (Option) 将游戏绘制到Terminal UI
-
+### 问题和缺陷
+还没有很方便的API可以将训练出来的模型与其他用户相通…缺乏AI开发的经验。
 
 ## Installation
 

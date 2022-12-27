@@ -24,12 +24,12 @@ class User():
 
 	def act(self, state, tau):
 		action = input('Enter your chosen action: ')
+		# TODO 加入指令解析
 		pi = np.zeros(self.action_size)
 		pi[action] = 1
 		value = None
 		NN_value = None
 		return (action, pi, value, NN_value)
-
 
 
 class Agent():
@@ -40,12 +40,14 @@ class Agent():
 		self.action_size = action_size
 
 		self.cpuct = cpuct
+		# 不方便实践GPU和CUDA。全部都用CPU跑了
 
 		self.MCTSsimulations = mcts_simulations
 		self.model = model
 
 		self.mcts = None
 
+		# 借用了原项目的API:
 		self.train_overall_loss = []
 		self.train_value_loss = []
 		self.train_policy_loss = []
@@ -94,7 +96,6 @@ class Agent():
 		nextState, _, _ = state.takeAction(action)
 
 		NN_value = -self.get_preds(nextState)[0]
-
 		lg.logger_mcts.info('ACTION VALUES...%s', pi)
 		lg.logger_mcts.info('CHOSEN ACTION...%d', action)
 		lg.logger_mcts.info('MCTS PERCEIVED VALUE...%f', value)

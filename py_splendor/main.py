@@ -5,7 +5,6 @@ import numpy as np
 np.set_printoptions(suppress=True)
 
 from shutil import copyfile
-import random
 from importlib import reload
 
 
@@ -23,20 +22,17 @@ from settings import run_folder, run_archive_folder
 import initialise
 import pickle
 
-
-lg.logger_main.info('=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*')
-lg.logger_main.info('=*=*=*=*=*=.      NEW LOG      =*=*=*=*=*')
-lg.logger_main.info('=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*')
-
 env = Game()
 
 # If loading an existing neural network, copy the config file to root
 if initialise.INITIAL_RUN_NUMBER != None:
-    copyfile(run_archive_folder  + env.name + '/run' + str(initialise.INITIAL_RUN_NUMBER).zfill(4) + '/config.py', './config.py')
+    copyfile(run_archive_folder  + env.name + str(initialise.INITIAL_RUN_NUMBER).zfill(4) + '/config.py', './config.py')
 
-import config
+import config 
 
 ######## LOAD MEMORIES IF NECESSARY ########
+
+# 命令参数修改
 
 if initialise.INITIAL_MEMORY_VERSION == None:
     memory = Memory(config.MEMORY_SIZE)
@@ -63,12 +59,13 @@ else:
     best_NN.model.set_weights(current_NN.model.get_weights())
 
 #copy the config file to the run folder
-copyfile('./config.py', run_folder + 'config.py')
+#copyfile('./config.py', run_folder + 'config.py')
 plot_model(current_NN.model, to_file=run_folder + 'models/model.png', show_shapes = True)
 
 print('\n')
 
 ######## CREATE THE PLAYERS ########
+
 
 current_player = Agent('current_player', env.state_size, env.action_size, config.MCTS_SIMS, config.CPUCT, current_NN)
 best_player = Agent('best_player', env.state_size, env.action_size, config.MCTS_SIMS, config.CPUCT, best_NN)

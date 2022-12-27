@@ -19,6 +19,7 @@ import keras.backend as K
 
 from settings import run_folder, run_archive_folder
 
+# 我们或许可以采用Conv1D?
 class Gen_Model():
 	def __init__(self, reg_const, learning_rate, input_dim, output_dim):
 		self.reg_const = reg_const
@@ -121,7 +122,7 @@ class Residual_CNN(Gen_Model):
 		filters = filters
 		, kernel_size = kernel_size
 		# ,data_format="channels_last"
-		, data_format="channels_first"
+		, data_format="channels_last"
 		# , data_format="NHWC"
 		, padding = 'same'
 		, use_bias=False
@@ -142,7 +143,7 @@ class Residual_CNN(Gen_Model):
 		x = Conv2D(
 		filters = filters
 		, kernel_size = kernel_size
-		, data_format="channels_first"
+		, data_format="channels_last"
 		, padding = 'same'
 		, use_bias=False
 		, activation='linear'
@@ -159,7 +160,7 @@ class Residual_CNN(Gen_Model):
 		x = Conv2D(
 		filters = 1
 		, kernel_size = (1,1)
-		, data_format="channels_first"
+		, data_format="channels_last"
 		, padding = 'same'
 		, use_bias=False
 		, activation='linear'
@@ -198,7 +199,7 @@ class Residual_CNN(Gen_Model):
 		x = Conv2D(
 		filters = 2
 		, kernel_size = (1,1)
-		, data_format="channels_first"
+		, data_format="channels_last"
 		, padding = 'same'
 		, use_bias=False
 		, activation='linear'

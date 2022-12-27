@@ -37,7 +37,7 @@ def playMatchesBetweenVersions(env, run_version, player1version, player2version,
     return (scores, memory, points, sp_scores)
 
 
-def playMatches(player1, player2, EPISODES, logger, turns_until_tau0, memory = None, goes_first = 0):
+def playMatches(player1: Agent, player2:Agent, EPISODES, logger, turns_until_tau0, memory = None, goes_first = 0):
 
     # 单局游戏显然是要初始化一个游戏实例的
     env = Game()
@@ -53,15 +53,15 @@ def playMatches(player1, player2, EPISODES, logger, turns_until_tau0, memory = N
 
         print (str(e+1) + ' ', end='')
 
+        # return state: gameState
         state = env.reset()
-        
         done = 0
         turn = 0
         # MCTS.py是我们可以直接微调来使用的
+        # NOTICE:考虑在这里对mcts默认值修改一下
         player1.mcts = None
         player2.mcts = None
 
-        # 先手我们可以统一设
         if goes_first == 0:
             player1Starts = random.randint(0,1) * 2 - 1
         else:
