@@ -5,44 +5,31 @@ import itertools as it
 import copy 
 from utils import actcode_to_action
 from config import *
+import loggers as lg
 
-num_clr_map = {
-	0: 'green',
-	1: 'white',
-	2: 'blue',
-	3: 'black',
-	4: 'red'
-}
-
-def num_to_color(num):
-	assert num in [0,1,2,3,4]
-	num_clr_map[num]	
 
 	# TODO: NOTICE: 宝石追踪！完全棋盘表示！
 class Game:
-	# TODO: 下一次commit完成CNN的处理
-
 	def __init__(self):
-		"""
-		ActionSpace: 对于玩家，它一次有最大105个可选行动：
-						[0, 90): 买卡(1,2,3级分别40,30,20张)	
-						[90, 95): 拿同色2宝石，5种选择
-						[95, 105): C53拿3个不同色宝石，10种选择。
-
-		# NOTICE ？这是真实的ActionState吗？
-		# NOTICE ？状态空间多大？不同玩家可做的行动是不对称的
-		"""
 		self.currentPlayer = 1 # 等价于playerTurn
-		#self.gameState = GameState(np.zeros(90, dtype=np.int8), 1, Player(1), Player(-1))
-		self.gameState = GameState(cards_pool.copy(), 1, Player(1), Player(-1))
-		self.actionSpace = np.zeros(ACTIONS_NUM, dtype=np.int8)
+		self.gameState = GameState(self._build_board(), 1, Player(1), Player(-1))
+		# self.gameState = GameState(cards_pool.copy(), 1, Player(1), Player(-1))
+		# self.actionSpace = np.zeros(ACTIONS_NUM, dtype=np.int8)
+		self.action_size = np.append(np.ones(CARDS_NUM, dtype=np.int8), np.zeros(ACTIONS_NUM-CARDS_NUM, dtype=np.int8))
 		#NOTICE: remove the deprecated field!
 		self.pieces = {'1': 'X', '0': '-', '-1':'O'}
 		self.name = 'Splendor'
-		self.grid_shape = (1, ACTIONS_NUM) 
 		self.input_shape = (2, 1, ACTIONS_NUM) # two players. two channels
 		self.state_size = len(self.gameState.binary)
+		self.grid_shape = (1, self.state_size)
 		self.action_size = ACTIONS_NUM
+
+	def _build_board(self):
+		"""返回长度位牌数 + gems总数的一维数组，标准对局中棋盘长度为90+35=125"""
+		# 0是未被拿取
+		cards_area = np.zeros(CARDS_NUM, dtype=np.int8)
+		gems_area = np.zeros(COLORS_NUM * GEMS_EACH_MAX, dtype=np.int8)
+		return np.append(cards_area, gems_area)
 
 	def reset(self):
 		self.gameState = GameState(cards_pool.copy(), 1, Player(1), Player(-1))
@@ -92,6 +79,12 @@ class Player:
 		self.taken_actions[actcode] += 1
 		self.recent_actcode = actcode
 
+	def bin_buy(self, card_code):
+		rest = cards_pool[cards_pool][:5] - self.bought
+		rest[rest<0] = 0
+		self.gems -= rest
+		return rest
+	
 	def buy(self, card_code):
 		# 已经检查过了
 		rest =  cards_pool[card_code][:5] - self.bought
@@ -100,6 +93,7 @@ class Player:
 		assert all(self.gems) > 0
 
 class GameState:
+	"""我们现在将board重构，游戏将成为棋盘游戏:"""
 	# TODO 将 board 进行重构，使其更接近二值化棋盘——算的应该会快一点
 	def __init__(self, 
 		board, 
@@ -114,12 +108,13 @@ class GameState:
 		# self.nobles = nobles   
 		self.playerTurn = playerTurn
 		self.playerlist = [playerTurn, p0, p1]
+		self.isEndGame = self._checkForEndGame()
+		self.allowedActions = self._allowedActions()
 		self.binary = self._binary()			# 兼容API的命名
 		self.id = self._convertStateToId()
-		self.allowedActions = self._allowedActions()
-		self.isEndGame = self._checkForEndGame()
 		self.value = self._getValue()
 		self.score = self._getScore()
+
 
 
 	def _binary(self):
@@ -127,37 +122,35 @@ class GameState:
 		兼容API命名。总之,它是描述状态空间的：
 		board的牌空间: (1, 90)二值化数组, 1为可获取, 0为已被买走
 		公共区域gems空间: (1, 5)数组
-		player1的可选牌: (1, 90)二值化数组，1为买得起，0为已被买走或买不起
-		player1的宝石存量
-		player2的可选牌: (1, 90)二值化数组，1为买得起，0为已被买走或买不起
+		两个玩家的，以及回合顺位计数
 		"""
-		action_states_record = np.append(
-								self.playerlist[1].taken_actions, 
-								self.playerlist[-1].taken_actions
-		)	
-		return action_states_record
+		p1_markers = np.zeros_like(self.board, dtype=np.int8)
+		p1_markers[self.board == self.playerTurn] = 1
+		p2_markers = np.zeros_like(self.board, dtype=np.int8)
+		p2_markers[self.board == -self.playerTurn] = 1
+		
+		return np.append(p1_markers, p2_markers)
 
 	def _allowedActions(self):
-		res = [ actcode for actcode in range(90, ACTIONS_NUM) if self._allowed(actcode)]
+		res = [ actcode for actcode in range(ACTIONS_NUM) if self._allowed(actcode)]
 		print(res)
 		return res
 
-	def TODO_not_been_bought(self, card_code):
-		return False if self.board[card_code] == 0 else True
-
 	def _not_been_bought(self, card_code):
+		return True if self.board[card_code] == 0 else False
+
+	"""deprecated"""
+	def OLD_not_been_bought(self, card_code):
 		return False if self.board[card_code][LV_I] == 0 else True
 
 	def _allowed(self, actcode):
 		assert actcode in range(ACTIONS_NUM)
-		if actcode < CARDS_NUM:
-			# card
+		if actcode < CARDS_NUM:										# buy a card
 			if self._not_been_bought(actcode) and self.playerlist[self.playerTurn].affortable(actcode):
 				return True
 			else:
 				return False
-		elif actcode < (CARDS_NUM+COLORS_NUM):
-			# pick gems with a single color
+		elif actcode < (CARDS_NUM+COLORS_NUM):		# pick gems with a single color
 			color_num = actcode - CARDS_NUM
 			return True if (self.gems[color_num] >= 4 and self.playerlist[self.playerTurn].will_not_overhold(2)) else False
 		else:
@@ -166,24 +159,19 @@ class GameState:
 			"""
 			[(0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 3), (0, 2, 4), (0, 3, 4), (1, 2, 3), (1, 2, 4), (1, 3, 4), (2, 3, 4)]
 			"""
-
 			if any(self.gems[list(color_indices)]) < 1 or not self.playerlist[self.playerTurn].will_not_overhold(3) :
 				return False
 			else:
 				return True	
 
 	def _convertStateToId(self):
-		# TODO: id简短特质化
-		p0_log = np.append(self.playerlist[1].gems, self.playerlist[1].bought)
-		# +10 bytes
-		p0_log = np.append(p0_log, self.playerlist[1].score)
-		# +1 bytes
-		p1_log = np.append(self.playerlist[-1].gems, self.playerlist[1].bought)
-		# +10 bytes
-		p1_log = np.append(p1_log, self.playerlist[-1].score)
-		# +1 bytes	
-		log = np.append(self._allowedActions, p0_log)
-		id = ''.join(map(str, np.append(log, p1_log)))
+		"""ID长度是两倍board长,不用分数位了，因为牌的去向确定分数就确定"""
+		p1_markers = np.zeros_like(self.board, dtype=np.int8)
+		p1_markers[self.board == 1] = 1
+		p2_markers = np.zeros_like(self.board, dtype=np.int8)
+		p2_markers[self.board == -1] = 1
+		markers = np.append(p1_markers, p2_markers)
+		id = ''.join(map(str, markers))
 		return id
 
 	def TODO_checkForEndGame(self):
@@ -198,6 +186,24 @@ class GameState:
 			return 1
 		else:
 			return 0
+
+		
+	def _returnGems(self, color, num, playerid):
+		"""传入color code, 对应颜色区域中进行玩家标记的擦除，从而完成退回操作"""
+		color_area_idx = CARDS_NUM + color * GEMS_EACH_MAX
+		color_area_end_idx = color_area_idx + GEMS_EACH_MAX
+		color_area = self.board[color_area_idx:color_area_end_idx]
+		marker_idx = np.where(color_area == playerid)[:num]
+		self.board[marker_idx] = 0	# ->0 完成擦除
+		self.gems[color] += num
+
+	def _lostGems(self, color, num, playerid):
+		color_area_idx = CARDS_NUM + color * GEMS_EACH_MAX
+		color_area_end_idx = color_area_idx + GEMS_EACH_MAX
+		color_area = self.board[color_area_idx:color_area_end_idx]
+		empty_idx = np.where(color_area == 0)[:num]
+		self.board[empty_idx] = playerid
+		self.gems[color] -= num
 
 	def TODO_getValue(self):
 		pass
@@ -218,21 +224,27 @@ class GameState:
 	def getWinner(self):
 		return self.value[0]
 
+
+
 	def takeAction(self, actcode):
 
 		# 从allowed_action选出,action已经合法
-		if actcode in range(90):
-			assert self.board[actcode][LV_I] != 0
-			self.playerlist[self.playerTurn].buy(actcode)
-			self.board[actcode][LV_I] = 0 # 标记为已被购买
-		elif actcode < 95:
+		if actcode in range(CARDS_NUM):
+			assert self.board[actcode] == 0
+			returned_gems = self.playerlist[self.playerTurn].buy(actcode)
+			self.board[actcode] = self.playerTurn # 标记为已被购买
+			returned_gems_type = np.where(returned_gems != 0)
+			self._returnGems(returned_gems_type, 1, self.playerTurn)
+			
+		elif actcode < (CARDS_NUM + COLORS_NUM):
 			# pick two
-			color = actcode - 90	
-			self.gems[color] -= 2
+			color = actcode - CARDS_NUM	
 			self.playerlist[self.playerTurn].gems[color] += 2
+			self._lostGems(color, 2, self.playerTurn)
 		else:
-			color_indices = list(it.combinations([0,1,2,3,4], 3))[actcode-95]
-			self.gems[list(color_indices)] -= 1
+			color_indices = list(it.combinations([0,1,2,3,4], 3))[actcode-(CARDS_NUM+COLORS_NUM)]
+			gems_types = list(color_indices)
+			self._lostGems(gems_types, 1, self.playerTurn)
 			self.playerlist[self.playerTurn].gems[list(color_indices)] += 1
 
 		self.playerlist[self.playerTurn].step_incrmnt(actcode)
