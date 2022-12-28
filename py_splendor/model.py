@@ -225,6 +225,7 @@ class Residual_CNN(Gen_Model):
 
 	def _build_model(self):
 
+		# 
 		main_input = Input(shape = self.input_dim, name = 'main_input')
 
 		x = self.conv_layer(main_input, self.hidden_layers[0]['filters'], self.hidden_layers[0]['kernel_size'])
@@ -235,7 +236,7 @@ class Residual_CNN(Gen_Model):
 
 		vh = self.value_head(x)
 		ph = self.policy_head(x)
-
+		
 		model = Model(inputs=[main_input], outputs=[vh, ph])
 		model.compile(loss={'value_head': 'mean_squared_error', 'policy_head': softmax_cross_entropy_with_logits},
 			optimizer=SGD(lr=self.learning_rate, momentum = config.MOMENTUM),	
@@ -245,6 +246,7 @@ class Residual_CNN(Gen_Model):
 		return model
 
 	def convertToModelInput(self, state):
+		# BUG binary还是有问题的
 		inputToModel =  state.binary #np.append(state.binary, [(state.playerTurn + 1)/2] * self.input_dim[1] * self.input_dim[2])
 		# NOTICE reshape注意匹配
 		inputToModel = np.reshape(inputToModel, self.input_dim) 
