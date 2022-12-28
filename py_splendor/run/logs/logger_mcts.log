@@ -1,0 +1,71 @@
+[224]$****** BUILDING NEW MCTS TREE FOR AGENT best_player ******
+[86]$***************************
+[87]$****** SIMULATION 1 ******
+[88]$***************************
+[61]$ROOT NODE...<bound method GameState._allowedActions of <game.GameState object at 0x7f4b7030d820>>0000000000000000000000
+[256]$1
+[257]$-----------------
+[63]$CURRENT PLAYER...1
+[69]$------MOVING TO LEAF------
+[122]$DONE...0
+[256]$1
+[257]$-----------------
+[134]$------EVALUATING LEAF------
+[139]$PREDICTED VALUE FOR 1: nan
+[129]$------DOING BACKFILL------
+[86]$***************************
+[87]$****** SIMULATION 2 ******
+[88]$***************************
+[61]$ROOT NODE...<bound method GameState._allowedActions of <game.GameState object at 0x7f4b7030d820>>0000000000000000000000
+[256]$1
+[257]$-----------------
+[63]$CURRENT PLAYER...1
+[69]$------MOVING TO LEAF------
+[122]$DONE...0
+[256]$1
+[257]$-----------------
+[134]$------EVALUATING LEAF------
+[139]$PREDICTED VALUE FOR 1: nan
+[129]$------DOING BACKFILL------
+[86]$***************************
+[87]$****** SIMULATION 3 ******
+[88]$***************************
+[61]$ROOT NODE...<bound method GameState._allowedActions of <game.GameState object at 0x7f4b7030d820>>0000000000000000000000
+[256]$1
+[257]$-----------------
+[63]$CURRENT PLAYER...1
+[69]$------MOVING TO LEAF------
+[122]$DONE...0
+[256]$1
+[257]$-----------------
+[134]$------EVALUATING LEAF------
+[139]$PREDICTED VALUE FOR 1: nan
+[129]$------DOING BACKFILL------
+[86]$***************************
+[87]$****** SIMULATION 4 ******
+[88]$***************************
+[61]$ROOT NODE...<bound method GameState._allowedActions of <game.GameState object at 0x7f4b7030d820>>0000000000000000000000
+[256]$1
+[257]$-----------------
+[63]$CURRENT PLAYER...1
+[69]$------MOVING TO LEAF------
+[122]$DONE...0
+[256]$1
+[257]$-----------------
+[134]$------EVALUATING LEAF------
+[139]$PREDICTED VALUE FOR 1: nan
+[129]$------DOING BACKFILL------
+[86]$***************************
+[87]$****** SIMULATION 5 ******
+[88]$***************************
+[61]$ROOT NODE...<bound method GameState._allowedActions of <game.GameState object at 0x7f4b7030d820>>0000000000000000000000
+[256]$1
+[257]$-----------------
+[63]$CURRENT PLAYER...1
+[69]$------MOVING TO LEAF------
+[122]$DONE...0
+[256]$1
+[257]$-----------------
+[134]$------EVALUATING LEAF------
+[139]$PREDICTED VALUE FOR 1: nan
+[129]$------DOING BACKFILL------

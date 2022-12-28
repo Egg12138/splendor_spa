@@ -40,7 +40,10 @@ NOBLE_BONUS: int = 3
 DECK1: int = 40
 DECK2: int = 30
 DECK3: int = 20
-ACTIONS_NUM: int = 105
+CARDS_NUM: int = 12
+COLORS_NUM: int = 5
+ACTIONS_NUM: int = CARDS_NUM + COLORS_NUM + 10  #标准5色就是+10, 就省的算一次C(n,3)组合数了
+BINARY_SPACE: int = CARDS_NUM + COLORS_NUM * GEMS_EACH_MAX
 
 # 一张卡的0-7各索引位
 GREEN_I:int = 0

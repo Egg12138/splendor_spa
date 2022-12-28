@@ -9,7 +9,7 @@ LOGGER_DISABLED = {
 'main':True
 , 'memory':False
 , 'tourney':False
-, 'mcts':True
+, 'mcts': False
 , 'model': False}
 
 

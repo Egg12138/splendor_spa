@@ -81,7 +81,7 @@ def playMatches(player1: Agent, player2:Agent, EPISODES, logger, turns_until_tau
 
         # GameState的render函数只是一些log信息
         env.gameState.render(logger)
-
+        # TODO: 先调试出深度过深的问题再把board二进制化
         while done == 0:
             turn = turn + 1
     

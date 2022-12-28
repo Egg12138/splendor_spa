@@ -74,6 +74,7 @@ class MCTS():
 		done = 0
 		value = 0
 
+		# 不是叶节点就持续向下，如果是叶节点就进行模拟（但这并不是随机地Rollout）
 		while not currentNode.isLeaf():
 
 			lg.logger_mcts.info('PLAYER TURN...%d', currentNode.state.playerTurn)

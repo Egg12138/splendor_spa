@@ -110,7 +110,7 @@ class GameState:
 		):
 		# board就是cards_pool
 		self.board = board
-		self.gems = np.ones(5, dtype=np.int8) * GEMS_EACH_MAX
+		self.gems = np.ones(COLORS_NUM, dtype=np.int8) * GEMS_EACH_MAX
 		# self.nobles = nobles   
 		self.playerTurn = playerTurn
 		self.playerlist = [playerTurn, p0, p1]
@@ -150,19 +150,19 @@ class GameState:
 
 	def _allowed(self, actcode):
 		assert actcode in range(ACTIONS_NUM)
-		if actcode < 90:
+		if actcode < CARDS_NUM:
 			# card
 			if self._not_been_bought(actcode) and self.playerlist[self.playerTurn].affortable(actcode):
 				return True
 			else:
 				return False
-		elif actcode < 95:
+		elif actcode < (CARDS_NUM+COLORS_NUM):
 			# pick gems with a single color
-			color_num = actcode - 90
+			color_num = actcode - CARDS_NUM
 			return True if (self.gems[color_num] >= 4 and self.playerlist[self.playerTurn].will_not_overhold(2)) else False
 		else:
 			# pick three gems
-			color_indices = list(it.combinations([0,1,2,3,4], 3))[actcode-95]
+			color_indices = list(it.combinations([0,1,2,3,4], 3))[actcode-(CARDS_NUM+COLORS_NUM)]
 			"""
 			[(0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 3), (0, 2, 4), (0, 3, 4), (1, 2, 3), (1, 2, 4), (1, 3, 4), (2, 3, 4)]
 			"""
@@ -175,10 +175,13 @@ class GameState:
 	def _convertStateToId(self):
 		# TODO: id简短特质化
 		p0_log = np.append(self.playerlist[1].gems, self.playerlist[1].bought)
+		# +10 bytes
 		p0_log = np.append(p0_log, self.playerlist[1].score)
+		# +1 bytes
 		p1_log = np.append(self.playerlist[-1].gems, self.playerlist[1].bought)
+		# +10 bytes
 		p1_log = np.append(p1_log, self.playerlist[-1].score)
-		# log = np.append(self.board, p0_log)
+		# +1 bytes	
 		log = np.append(self._allowedActions, p0_log)
 		id = ''.join(map(str, np.append(log, p1_log)))
 		return id

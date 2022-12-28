@@ -63,6 +63,7 @@ class Agent():
 		lg.logger_mcts.info('CURRENT PLAYER...%d', self.mcts.root.state.playerTurn)
 
 		##### MOVE THE LEAF NODE
+		# 陷在这一步中
 		leaf, value, done, breadcrumbs = self.mcts.moveToLeaf()
 		leaf.state.render(lg.logger_mcts)
 
@@ -176,6 +177,7 @@ class Agent():
 			actions = np.argwhere(pi == max(pi))
 			action = random.choice(actions)[0]
 		else:
+			# BUG: 在一次迭代（包含若干EPISODES）完成后，pi是nan数组
 			action_idx = np.random.multinomial(1, pi)
 			action = np.where(action_idx==1)[0][0]
 

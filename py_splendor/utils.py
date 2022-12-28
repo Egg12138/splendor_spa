@@ -19,15 +19,15 @@ def setup_logger(name, log_file, level=logging.INFO):
 
 def actcode_to_action(code):
     print(f"{code}-->...")
-    if code < 90:
+    if code < CARDS_NUM:
         action = _card_content(code)    
         return action
-    elif code < 95:
-        gems_coloridx = code - 90
+    elif code < (CARDS_NUM+COLORS_NUM):
+        gems_coloridx = code - CARDS_NUM
         action = "Picked " + f"{GEMS_ICONS[gems_coloridx]}"*2
         return action
     else:
-        combination_id = code - 95
+        combination_id = code - (CARDS_NUM + COLORS_NUM)
         action = f"Picked {diff_color_map[combination_id]}"
         return action
 

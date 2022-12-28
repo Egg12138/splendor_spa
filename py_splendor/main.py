@@ -32,8 +32,6 @@ import config
 
 ######## LOAD MEMORIES IF NECESSARY ########
 
-# 命令参数修改
-
 if initialise.INITIAL_MEMORY_VERSION == None:
     memory = Memory(config.MEMORY_SIZE)
 else:
@@ -64,8 +62,8 @@ plot_model(current_NN.model, to_file=run_folder + 'models/model.png', show_shape
 
 print('\n')
 
-######## CREATE THE PLAYERS ########
 
+######## 创建智能体玩家实例，ResNN作为他们的网络模型传入 ########
 
 current_player = Agent('current_player', env.state_size, env.action_size, config.MCTS_SIMS, config.CPUCT, current_NN)
 best_player = Agent('best_player', env.state_size, env.action_size, config.MCTS_SIMS, config.CPUCT, best_NN)
@@ -83,7 +81,7 @@ while 1:
     lg.logger_main.info('BEST PLAYER VERSION: %d', best_player_version)
     print('BEST PLAYER VERSION ' + str(best_player_version))
 
-    ######## SELF PLAY ########
+    ######## 自对战 ########
     print('SELF PLAYING ' + str(config.EPISODES) + ' EPISODES...')
     _, memory, _, _ = playMatches(best_player, best_player, config.EPISODES, lg.logger_main, turns_until_tau0 = config.TURNS_UNTIL_TAU0, memory = memory)
     print('\n')
@@ -92,8 +90,7 @@ while 1:
     
     if len(memory.ltmemory) >= config.MEMORY_SIZE:
 
-        ######## RETRAINING ########
-        print('RETRAINING...')
+        print("MEMORY HANDLing..")
         current_player.replay(memory.ltmemory)
         print('')
 
