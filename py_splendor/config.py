@@ -7,6 +7,7 @@ MCTS_SIMS = 5
 MEMORY_SIZE = 30000
 TURNS_UNTIL_TAU0 = 10 # turn on which it starts playing deterministically
 CPUCT = 1
+# LEARN 
 EPSILON = 0.2
 ALPHA = 0.8
 INITIAL_REGISTER_VERSION = None
@@ -30,7 +31,7 @@ HIDDEN_CNN_LAYERS = [
 #### EVALUATION
 EVAL_EPISODES = 20
 SCORING_THRESHOLD = 1.3
-TARGET: int = 15
+TARGET: int = 2
 
 GEMS_INIT: int = 0
 GEMS_HOLD_MAX: int = 10
@@ -40,7 +41,7 @@ NOBLE_BONUS: int = 3
 DECK1: int = 40
 DECK2: int = 30
 DECK3: int = 20
-CARDS_NUM: int = 12
+CARDS_NUM: int = 10
 COLORS_NUM: int = 5
 ACTIONS_NUM: int = CARDS_NUM + COLORS_NUM + 10  #标准5色就是+10, 就省的算一次C(n,3)组合数了
 BINARY_SPACE: int = CARDS_NUM + COLORS_NUM * GEMS_EACH_MAX

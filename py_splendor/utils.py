@@ -3,8 +3,8 @@ from config import *
 
 def setup_logger(name, log_file, level=logging.INFO):
 
-    # formatter = logging.Formatter('%(asctime)s %(levelname)s [%(lineno)d]')
-    formatter = logging.Formatter('[%(lineno)d]$%(message)s')
+    formatter = logging.Formatter('%(asctime)s [%(lineno)d] %(message)s')
+    # formatter = logging.Formatter('[%(lineno)d]$%(message)s')
 
     handler = logging.FileHandler(log_file)        
     handler.setFormatter(formatter)

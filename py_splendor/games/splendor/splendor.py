@@ -3,6 +3,7 @@
 import numpy as np
 import itertools as it
 import copy 
+from utils import actcode_to_action
 from config import *
 
 num_clr_map = {
@@ -17,6 +18,7 @@ def num_to_color(num):
 	assert num in [0,1,2,3,4]
 	num_clr_map[num]	
 
+	# TODO: NOTICE: 宝石追踪！完全棋盘表示！
 class Game:
 	# TODO: 下一次commit完成CNN的处理
 
@@ -31,15 +33,15 @@ class Game:
 		# NOTICE ？状态空间多大？不同玩家可做的行动是不对称的
 		"""
 		self.currentPlayer = 1 # 等价于playerTurn
+		#self.gameState = GameState(np.zeros(90, dtype=np.int8), 1, Player(1), Player(-1))
 		self.gameState = GameState(cards_pool.copy(), 1, Player(1), Player(-1))
 		self.actionSpace = np.zeros(ACTIONS_NUM, dtype=np.int8)
 		#NOTICE: remove the deprecated field!
 		self.pieces = {'1': 'X', '0': '-', '-1':'O'}
 		self.name = 'Splendor'
-		# 一维的序列化的棋盘，这一点暗示我们似乎可以用一维卷积操作？
 		self.grid_shape = (1, ACTIONS_NUM) 
 		self.input_shape = (2, 1, ACTIONS_NUM) # two players. two channels
-		self.state_size =  len(self.gameState.binary)
+		self.state_size = len(self.gameState.binary)
 		self.action_size = ACTIONS_NUM
 
 	def reset(self):
@@ -65,15 +67,21 @@ class Player:
 		self.gems = np.zeros(5, dtype=np.int8)
 		self.score = 0
 		self.bought = np.zeros(5, dtype=np.int8)
-		self.taken_actions = np.zeros(ACTIONS_NUM, dtype=np.int8) 
+		self.taken_actions = np.zeros(ACTIONS_NUM, dtype=np.int8)
+		self.recent_actcode = None # 最近一次的行动代号 
 		# NOTICE taken_actions跟binary相对接
 		# 预设为一个ACTIONS_NUM位的行动记录槽，
 		# 需要注意的是，拿取宝石操作会重复，所以目前用binary不太妥，
 
 	def affortable(self, card_code):
 		delta = self.gems + self.bought - cards_pool[card_code][:5] 
-		return False if delta.any() < 0 else True
+		if all(delta) > 0:
+			return True
+		else:
+			return False
 
+	def will_not_overhold(self, num):
+		return False if self.gems.sum()+num > 10 else True
 	def show(self):
 		print(self.id, self.gems, self.score, sep='~\n')
 
@@ -82,6 +90,7 @@ class Player:
 
 	def step_incrmnt(self,actcode):
 		self.taken_actions[actcode] += 1
+		self.recent_actcode = actcode
 
 	def buy(self, card_code):
 		# 已经检查过了
@@ -91,7 +100,7 @@ class Player:
 		assert all(self.gems) > 0
 
 class GameState:
-
+	# TODO 将 board 进行重构，使其更接近二值化棋盘——算的应该会快一点
 	def __init__(self, 
 		board, 
 		playerTurn,
@@ -101,7 +110,7 @@ class GameState:
 		):
 		# board就是cards_pool
 		self.board = board
-		self.gems = np.ones(5) * GEMS_EACH_MAX
+		self.gems = np.ones(COLORS_NUM, dtype=np.int8) * GEMS_EACH_MAX
 		# self.nobles = nobles   
 		self.playerTurn = playerTurn
 		self.playerlist = [playerTurn, p0, p1]
@@ -129,41 +138,50 @@ class GameState:
 		return action_states_record
 
 	def _allowedActions(self):
-		[ actcode for actcode in range(ACTIONS_NUM) if self._allowed(actcode)]
+		res = [ actcode for actcode in range(90, ACTIONS_NUM) if self._allowed(actcode)]
+		print(res)
+		return res
 
-	def _not_bought(self, card_code):
-		return False if self.board[card_code][LV_I] == 1 else True
+	def TODO_not_been_bought(self, card_code):
+		return False if self.board[card_code] == 0 else True
+
+	def _not_been_bought(self, card_code):
+		return False if self.board[card_code][LV_I] == 0 else True
 
 	def _allowed(self, actcode):
 		assert actcode in range(ACTIONS_NUM)
-		if actcode < 90:
+		if actcode < CARDS_NUM:
 			# card
-			if self._not_bought(actcode) and self.playerlist[self.playerTurn].affortable(actcode):
+			if self._not_been_bought(actcode) and self.playerlist[self.playerTurn].affortable(actcode):
 				return True
 			else:
 				return False
-		elif actcode < 95:
+		elif actcode < (CARDS_NUM+COLORS_NUM):
 			# pick gems with a single color
-			color_num = actcode - 90
-			return True if self.gems[color_num] >= 4 else False
+			color_num = actcode - CARDS_NUM
+			return True if (self.gems[color_num] >= 4 and self.playerlist[self.playerTurn].will_not_overhold(2)) else False
 		else:
 			# pick three gems
-			color_indices = list(it.combinations([0,1,2,3,4], 3))[actcode-95]
+			color_indices = list(it.combinations([0,1,2,3,4], 3))[actcode-(CARDS_NUM+COLORS_NUM)]
 			"""
 			[(0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 3), (0, 2, 4), (0, 3, 4), (1, 2, 3), (1, 2, 4), (1, 3, 4), (2, 3, 4)]
 			"""
 
-			if any(self.gems[list(color_indices)]) < 1:
+			if any(self.gems[list(color_indices)]) < 1 or not self.playerlist[self.playerTurn].will_not_overhold(3) :
 				return False
 			else:
 				return True	
 
 	def _convertStateToId(self):
+		# TODO: id简短特质化
 		p0_log = np.append(self.playerlist[1].gems, self.playerlist[1].bought)
+		# +10 bytes
 		p0_log = np.append(p0_log, self.playerlist[1].score)
+		# +1 bytes
 		p1_log = np.append(self.playerlist[-1].gems, self.playerlist[1].bought)
+		# +10 bytes
 		p1_log = np.append(p1_log, self.playerlist[-1].score)
-		# log = np.append(self.board, p0_log)
+		# +1 bytes	
 		log = np.append(self._allowedActions, p0_log)
 		id = ''.join(map(str, np.append(log, p1_log)))
 		return id
@@ -205,17 +223,18 @@ class GameState:
 		# 从allowed_action选出,action已经合法
 		if actcode in range(90):
 			assert self.board[actcode][LV_I] != 0
-			self.playerlist[self.playerTurn].buy(self, cards_pool[actcode])
-			self.board[actcode][LV_I] = 0
+			self.playerlist[self.playerTurn].buy(actcode)
+			self.board[actcode][LV_I] = 0 # 标记为已被购买
 		elif actcode < 95:
 			# pick two
 			color = actcode - 90	
 			self.gems[color] -= 2
-			self.playerlist[self.playerTurn].gems[color] += 2	
+			self.playerlist[self.playerTurn].gems[color] += 2
 		else:
-			color_indices = list(it.combinations([0,1,2,3,4], 3))
-			self.gems[color_indices] -= 1
-			self.playerlist[self.playerTurn].gems[color_indices] += 1
+			color_indices = list(it.combinations([0,1,2,3,4], 3))[actcode-95]
+			self.gems[list(color_indices)] -= 1
+			self.playerlist[self.playerTurn].gems[list(color_indices)] += 1
+
 		self.playerlist[self.playerTurn].step_incrmnt(actcode)
 		newState = copy.deepcopy(self)	
 		newState.playerTurn = -self.playerTurn
@@ -229,10 +248,17 @@ class GameState:
 		return (newState, value, done)
 
 	def render(self, logger):
+		action = self.playerlist[-self.playerTurn].recent_actcode
+		if action == None:
+			action = self.playerTurn
+		else:
+			action = actcode_to_action(action)
+		logger.info(action)
 		logger.info('-----------------')
 
 
 if __name__ == '__main__':
 	g = Game()
 	print(g.gameState.board)
+	print(g.gameState.allowedActions)
 

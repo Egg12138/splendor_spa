@@ -5,19 +5,10 @@ import itertools as it
 import copy 
 from utils import actcode_to_action
 from config import *
+import loggers as lg
 
-num_clr_map = {
-	0: 'green',
-	1: 'white',
-	2: 'blue',
-	3: 'black',
-	4: 'red'
-}
 
-def num_to_color(num):
-	assert num in [0,1,2,3,4]
-	num_clr_map[num]	
-
+	# TODO: NOTICE: 宝石追踪！完全棋盘表示！
 class Game:
 	# TODO: 下一次commit完成CNN的处理
 
@@ -34,14 +25,14 @@ class Game:
 		self.currentPlayer = 1 # 等价于playerTurn
 		#self.gameState = GameState(np.zeros(90, dtype=np.int8), 1, Player(1), Player(-1))
 		self.gameState = GameState(cards_pool.copy(), 1, Player(1), Player(-1))
-		self.actionSpace = np.zeros(ACTIONS_NUM, dtype=np.int8)
+		# self.actionSpace = np.zeros(ACTIONS_NUM, dtype=np.int8)
+		self.action_size = np.append(np.ones(CARDS_NUM, dtype=np.int8), np.zeros(ACTIONS_NUM-CARDS_NUM, dtype=np.int8))
 		#NOTICE: remove the deprecated field!
 		self.pieces = {'1': 'X', '0': '-', '-1':'O'}
 		self.name = 'Splendor'
-		# 一维的序列化的棋盘，这一点暗示我们似乎可以用一维卷积操作？
-		self.grid_shape = (1, ACTIONS_NUM) 
 		self.input_shape = (2, 1, ACTIONS_NUM) # two players. two channels
 		self.state_size = len(self.gameState.binary)
+		self.grid_shape = (1, self.state_size)
 		self.action_size = ACTIONS_NUM
 
 	def reset(self):
@@ -114,10 +105,10 @@ class GameState:
 		# self.nobles = nobles   
 		self.playerTurn = playerTurn
 		self.playerlist = [playerTurn, p0, p1]
+		self.isEndGame = self._checkForEndGame()
+		self.allowedActions = self._allowedActions()
 		self.binary = self._binary()			# 兼容API的命名
 		self.id = self._convertStateToId()
-		self.allowedActions = self._allowedActions()
-		self.isEndGame = self._checkForEndGame()
 		self.value = self._getValue()
 		self.score = self._getScore()
 
@@ -127,18 +118,18 @@ class GameState:
 		兼容API命名。总之,它是描述状态空间的：
 		board的牌空间: (1, 90)二值化数组, 1为可获取, 0为已被买走
 		公共区域gems空间: (1, 5)数组
-		player1的可选牌: (1, 90)二值化数组，1为买得起，0为已被买走或买不起
-		player1的宝石存量
-		player2的可选牌: (1, 90)二值化数组，1为买得起，0为已被买走或买不起
+		两个玩家的，以及回合顺位计数
 		"""
-		action_states_record = np.append(
-								self.playerlist[1].taken_actions, 
-								self.playerlist[-1].taken_actions
-		)	
-		return action_states_record
+		p0_log = np.append(self.playerlist[1].gems, self.playerlist[1].bought)
+		p0_log = np.append(p0_log, self.playerlist[1].score)
+		p1_log = np.append(self.playerlist[-1].gems, self.playerlist[1].bought)
+		p1_log = np.append(p1_log, self.playerlist[-1].score)
+		log = np.append(self.board, p0_log)
+		log = np.append(log, self.gems)
+		return log
 
 	def _allowedActions(self):
-		res = [ actcode for actcode in range(90, ACTIONS_NUM) if self._allowed(actcode)]
+		res = [ actcode for actcode in range(ACTIONS_NUM) if self._allowed(actcode)]
 		print(res)
 		return res
 
@@ -166,14 +157,12 @@ class GameState:
 			"""
 			[(0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 3), (0, 2, 4), (0, 3, 4), (1, 2, 3), (1, 2, 4), (1, 3, 4), (2, 3, 4)]
 			"""
-
 			if any(self.gems[list(color_indices)]) < 1 or not self.playerlist[self.playerTurn].will_not_overhold(3) :
 				return False
 			else:
 				return True	
 
 	def _convertStateToId(self):
-		# TODO: id简短特质化
 		p0_log = np.append(self.playerlist[1].gems, self.playerlist[1].bought)
 		# +10 bytes
 		p0_log = np.append(p0_log, self.playerlist[1].score)
@@ -182,7 +171,7 @@ class GameState:
 		# +10 bytes
 		p1_log = np.append(p1_log, self.playerlist[-1].score)
 		# +1 bytes	
-		log = np.append(self._allowedActions, p0_log)
+		log = np.append(self.board, p0_log)
 		id = ''.join(map(str, np.append(log, p1_log)))
 		return id
 
@@ -221,17 +210,17 @@ class GameState:
 	def takeAction(self, actcode):
 
 		# 从allowed_action选出,action已经合法
-		if actcode in range(90):
+		if actcode in range(CARDS_NUM):
 			assert self.board[actcode][LV_I] != 0
 			self.playerlist[self.playerTurn].buy(actcode)
 			self.board[actcode][LV_I] = 0 # 标记为已被购买
-		elif actcode < 95:
+		elif actcode < (CARDS_NUM + COLORS_NUM):
 			# pick two
-			color = actcode - 90	
+			color = actcode - CARDS_NUM	
 			self.gems[color] -= 2
 			self.playerlist[self.playerTurn].gems[color] += 2
 		else:
-			color_indices = list(it.combinations([0,1,2,3,4], 3))[actcode-95]
+			color_indices = list(it.combinations([0,1,2,3,4], 3))[actcode-(CARDS_NUM+COLORS_NUM)]
 			self.gems[list(color_indices)] -= 1
 			self.playerlist[self.playerTurn].gems[list(color_indices)] += 1
 

@@ -31,7 +31,16 @@
 一个QLearning机器学习方法的展示，这是我们进一步开发的基础
 
 ### MCTS&&RestNN Simplified-Splendor AI
+
+
+
+
+* 为什么不使用MiniMax?
+状态空间太大
+演示：
 * 为什么不选用Alpha-Beta剪枝？
+* 激活函数：sigmoid
+* 损失函数: softmax交叉熵
 * 选用交叉熵作为损失函数:相比于二次loss的:
 $$
 \propto \frac{(y-a)^2}{2}
@@ -54,15 +63,22 @@ $$
 
 于是选用`tf.nn.softmax_cross_entropy_with_logits`
 
+我们正好使用了sogmoid，那么对于神经元组我们使用softmax就自然了。s
 方便构建模型和训练和做出demo。
 
 
 
 
 
+
+### ResNN
+
+
+
+
 ### 问题和缺陷
 还没有很方便的API可以将训练出来的模型与其他用户相通…缺乏AI开发的经验。
-
+博弈论角度，为什么这种蒙卡树搜索适合打明牌游戏
 ## Installation
 
 <!-- TODO -->

@@ -6,6 +6,7 @@ import random
 import MCTS as mc
 from game import GameState
 from loss import softmax_cross_entropy_with_logits
+from utils import actcode_to_action
 
 import config
 import loggers as lg
@@ -25,6 +26,7 @@ class User():
 	def act(self, state, tau):
 		action = input('Enter your chosen action: ')
 		# TODO 加入指令解析
+		# PI是真实选择策略
 		pi = np.zeros(self.action_size)
 		pi[action] = 1
 		value = None
@@ -62,15 +64,11 @@ class Agent():
 		self.mcts.root.state.render(lg.logger_mcts)
 		lg.logger_mcts.info('CURRENT PLAYER...%d', self.mcts.root.state.playerTurn)
 
-		##### MOVE THE LEAF NODE
-		# 陷在这一步中
 		leaf, value, done, breadcrumbs = self.mcts.moveToLeaf()
 		leaf.state.render(lg.logger_mcts)
 
-		##### EVALUATE THE LEAF NODE
 		value, breadcrumbs = self.evaluateLeaf(leaf, value, done, breadcrumbs)
 
-		##### BACKFILL THE VALUE THROUGH THE TREE
 		self.mcts.backFill(leaf, value, breadcrumbs)
 
 
@@ -89,9 +87,10 @@ class Agent():
 			self.simulate()
 
 		#### get action values
+		# BUG: Return None
 		pi, values = self.getAV(1)
 
-		####pick the action
+		#### choose the action
 		action, value = self.chooseAction(pi, values, tau)
 
 		nextState, _, _ = state.takeAction(action)
@@ -105,15 +104,17 @@ class Agent():
 		return (action, pi, value, NN_value)
 
 
+		# 给出这个节点的预测，这里的概率是
 	def get_preds(self, state):
-		#predict the leaf
+		#  把state.binary转成input_dim同形的inputToModel
+		# BUG: inputToModel
 		inputToModel = np.array([self.model.convertToModelInput(state)])
-
+		# LEARN Keras Model predict
+		# BUG pred is None
 		preds = self.model.predict(inputToModel)
 		value_array = preds[0]
 		logits_array = preds[1]
 		value = value_array[0]
-
 		logits = logits_array[0]
 
 		allowedActions = state.allowedActions
@@ -121,6 +122,7 @@ class Agent():
 		mask = np.ones(logits.shape,dtype=bool)
 		mask[allowedActions] = False
 		logits[mask] = -100
+		print(f"{value_array=}, {logits_array=}, {logits=}")
 
 		#SOFTMAX
 		odds = np.exp(logits)
@@ -129,12 +131,13 @@ class Agent():
 		return ((value, probs, allowedActions))
 
 
+	# 对叶进行一次评估，并且回溯更新到根节点
 	def evaluateLeaf(self, leaf, value, done, breadcrumbs):
 
 		lg.logger_mcts.info('------EVALUATING LEAF------')
 
 		if done == 0:
-	
+			# 节点评估分数和胜率还有叶节点的allowedActions
 			value, probs, allowedActions = self.get_preds(leaf.state)
 			lg.logger_mcts.info('PREDICTED VALUE FOR %d: %f', leaf.state.playerTurn, value)
 
@@ -142,7 +145,10 @@ class Agent():
 
 			for idx, action in enumerate(allowedActions):
 				newState, _, _ = leaf.state.takeAction(action)
+				# NOTICE 靠id识别。那么状态空间会很非常地多。
+				# 有点问题
 				if newState.id not in self.mcts.tree:
+					lg.logger_mcts.info('action...%s', actcode_to_action(action))
 					node = mc.Node(newState)
 					self.mcts.addNode(node)
 					lg.logger_mcts.info('added node...%s...p = %f', node.id, probs[idx])
@@ -151,6 +157,7 @@ class Agent():
 					lg.logger_mcts.info('existing node...%s...', node.id)
 
 				newEdge = mc.Edge(leaf, node, probs[idx], action)
+				# expand
 				leaf.edges.append((action, newEdge))
 				
 		else:
@@ -169,6 +176,7 @@ class Agent():
 			pi[action] = pow(edge.stats['N'], 1/tau)
 			values[action] = edge.stats['Q']
 
+		print(f"!!!!{pi=}!!!!{edge=}")
 		pi = pi / (np.sum(pi) * 1.0)
 		return pi, values
 
@@ -222,7 +230,7 @@ class Agent():
 		return preds
 
 	def buildMCTS(self, state):
-		lg.logger_mcts.info('****** BUILDING NEW MCTS TREE FOR AGENT %s ******', self.name)
+		lg.logger_mcts.info('****** 创建MCT, Agent: %s ******', self.name)
 		self.root = mc.Node(state)
 		self.mcts = mc.MCTS(self.root, self.cpuct)
 

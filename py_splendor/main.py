@@ -105,9 +105,7 @@ while 1:
         if iteration % 5 == 0:
             pickle.dump( memory, open( run_folder + "memory/memory" + str(iteration).zfill(4) + ".p", "wb" ) )
 
-        lg.logger_memory.info('====================')
-        lg.logger_memory.info('NEW MEMORIES')
-        lg.logger_memory.info('====================')
+        lg.logger_memory.info('NEW MEMORIES: ')
         
         memory_samp = random.sample(memory.ltmemory, min(1000, len(memory.ltmemory)))
         
@@ -137,6 +135,7 @@ while 1:
 
         print('\n\n')
 
+        # 迭代进化新版本
         if scores['current_player'] > scores['best_player'] * config.SCORING_THRESHOLD:
             best_player_version = best_player_version + 1
             best_NN.model.set_weights(current_NN.model.get_weights())

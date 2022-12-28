@@ -1,7 +1,8 @@
 """
 不采用Alpha-Beta减枝？
 
-UCB(State_i) = Mean(V_i) + c \sqrt{logN / n_i}, let c = 2
+UCB(State_i):
+ValueEval(State_i) = Mean(V_i) + c \sqrt{logN / n_i}, let c = 2
 choose the largest one.
 AlphaZero MCTS没有Rollout？
 我们的AlphaZero-like MCTS Algo会有仿真环节
@@ -74,7 +75,7 @@ class MCTS():
 		done = 0
 		value = 0
 
-		# 不是叶节点就持续向下，如果是叶节点就进行模拟（但这并不是随机地Rollout）
+		# 不是叶节点就持续向下，如果是叶节点就进行模拟（并不是Rollout）
 		while not currentNode.isLeaf():
 
 			lg.logger_mcts.info('PLAYER TURN...%d', currentNode.state.playerTurn)

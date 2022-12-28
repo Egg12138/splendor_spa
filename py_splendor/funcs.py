@@ -12,6 +12,7 @@ import config
 
 def playMatchesBetweenVersions(env, run_version, player1version, player2version, EPISODES, logger, turns_until_tau0, goes_first = 0):
     
+    # 玩家/智能体设置
     if player1version == -1:
         player1 = User('player1', env.state_size, env.action_size)
     else:
@@ -32,6 +33,7 @@ def playMatchesBetweenVersions(env, run_version, player1version, player2version,
             player2_NN.model.set_weights(player2_network.get_weights())
         player2 = Agent('player2', env.state_size, env.action_size, config.MCTS_SIMS, config.CPUCT, player2_NN)
 
+    # 开始对战
     scores, memory, points, sp_scores = playMatches(player1, player2, EPISODES, logger, turns_until_tau0, None, goes_first)
 
     return (scores, memory, points, sp_scores)
@@ -39,7 +41,8 @@ def playMatchesBetweenVersions(env, run_version, player1version, player2version,
 
 def playMatches(player1: Agent, player2:Agent, EPISODES, logger, turns_until_tau0, memory = None, goes_first = 0):
 
-    # 单局游戏显然是要初始化一个游戏实例的
+
+    # LEARN: ResNN工作逻辑
     env = Game()
     scores = {player1.name:0, "drawn": 0, player2.name:0}
     sp_scores = {'sp':0, "drawn": 0, 'nsp':0}
@@ -71,21 +74,19 @@ def playMatches(player1: Agent, player2:Agent, EPISODES, logger, turns_until_tau
             players = {1:{"agent": player1, "name":player1.name}
                     , -1: {"agent": player2, "name":player2.name}
                     }
-            logger.info(player1.name + ' plays as X')
+            logger.info(player1.name + ' First')
         else:
             players = {1:{"agent": player2, "name":player2.name}
                     , -1: {"agent": player1, "name":player1.name}
                     }
-            logger.info(player2.name + ' plays as X')
+            logger.info(player2.name + ' First')
             logger.info('--------------')
 
-        # GameState的render函数只是一些log信息
         env.gameState.render(logger)
         # TODO: 先调试出深度过深的问题再把board二进制化
         while done == 0:
-            turn = turn + 1
-    
-            """MCTS的结果返回行动，这一过程发生在游戏的每一轮中"""
+            turn += 1
+            """MCTS的结果返回行动,这一过程发生在游戏的每一轮中"""
             #### Run the MCTS algo and return an action
             if turn < turns_until_tau0:
                 # Agent.act
