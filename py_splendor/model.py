@@ -126,7 +126,6 @@ class Residual_CNN(Gen_Model):
 		, kernel_size = kernel_size
 		# ,data_format="channels_last"
 		, data_format="channels_last"
-		# , data_format="NHWC"
 		, padding = 'same'
 		, use_bias=False
 		, activation='linear'

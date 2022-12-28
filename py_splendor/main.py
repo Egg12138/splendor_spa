@@ -41,8 +41,16 @@ else:
 ######## LOAD MODEL IF NECESSARY ########
 
 # create an untrained neural network objects from the config file
-current_NN = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, (2,) + env.grid_shape,   env.action_size, config.HIDDEN_CNN_LAYERS)
-best_NN = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, (2,) +  env.grid_shape,   env.action_size, config.HIDDEN_CNN_LAYERS)
+current_NN = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, 
+            (2,) + env.grid_shape,   # grid_shape我在这里设为璀璨宝石的操作空间，不包括预约，
+                                     # 就有：买90张卡+5： 色宝石每个拿两个 + 10：5色宝石三异色C(5,3)组合数 = 105
+                                     # 我设为一维的(1,5)。
+                                     # 原项目是(6, 7)因为它是一个二维棋盘游戏，棋盘尺寸是(6, 7)
+                                     # (2, )应该是两个玩家，于是两个channel吧。
+            env.action_size, config.HIDDEN_CNN_LAYERS)
+best_NN = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, 
+            (2,) +  env.grid_shape,   
+            env.action_size, config.HIDDEN_CNN_LAYERS)
 
 #If loading an existing neural netwrok, set the weights from that model
 if initialise.INITIAL_MODEL_VERSION != None:
