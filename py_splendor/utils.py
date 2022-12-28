@@ -3,7 +3,8 @@ from config import *
 
 def setup_logger(name, log_file, level=logging.INFO):
 
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    # formatter = logging.Formatter('%(asctime)s %(levelname)s [%(lineno)d]')
+    formatter = logging.Formatter('[%(lineno)d]$%(message)s')
 
     handler = logging.FileHandler(log_file)        
     handler.setFormatter(formatter)
@@ -17,7 +18,7 @@ def setup_logger(name, log_file, level=logging.INFO):
 
 
 def actcode_to_action(code):
-    assert code in range(ACTIONS_NUM)
+    print(f"{code}-->...")
     if code < 90:
         action = _card_content(code)    
         return action

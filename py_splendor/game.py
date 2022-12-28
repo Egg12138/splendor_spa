@@ -3,6 +3,7 @@
 import numpy as np
 import itertools as it
 import copy 
+from utils import actcode_to_action
 from config import *
 
 num_clr_map = {
@@ -31,6 +32,7 @@ class Game:
 		# NOTICE ？状态空间多大？不同玩家可做的行动是不对称的
 		"""
 		self.currentPlayer = 1 # 等价于playerTurn
+		#self.gameState = GameState(np.zeros(90, dtype=np.int8), 1, Player(1), Player(-1))
 		self.gameState = GameState(cards_pool.copy(), 1, Player(1), Player(-1))
 		self.actionSpace = np.zeros(ACTIONS_NUM, dtype=np.int8)
 		#NOTICE: remove the deprecated field!
@@ -65,7 +67,8 @@ class Player:
 		self.gems = np.zeros(5, dtype=np.int8)
 		self.score = 0
 		self.bought = np.zeros(5, dtype=np.int8)
-		self.taken_actions = np.zeros(ACTIONS_NUM, dtype=np.int8) 
+		self.taken_actions = np.zeros(ACTIONS_NUM, dtype=np.int8)
+		self.recent_actcode = None # 最近一次的行动代号 
 		# NOTICE taken_actions跟binary相对接
 		# 预设为一个ACTIONS_NUM位的行动记录槽，
 		# 需要注意的是，拿取宝石操作会重复，所以目前用binary不太妥，
@@ -87,6 +90,7 @@ class Player:
 
 	def step_incrmnt(self,actcode):
 		self.taken_actions[actcode] += 1
+		self.recent_actcode = actcode
 
 	def buy(self, card_code):
 		# 已经检查过了
@@ -96,7 +100,7 @@ class Player:
 		assert all(self.gems) > 0
 
 class GameState:
-
+	# TODO 将 board 进行重构，使其更接近二值化棋盘——算的应该会快一点
 	def __init__(self, 
 		board, 
 		playerTurn,
@@ -134,9 +138,12 @@ class GameState:
 		return action_states_record
 
 	def _allowedActions(self):
-		res = [ actcode for actcode in range(ACTIONS_NUM) if self._allowed(actcode)]
+		res = [ actcode for actcode in range(90, ACTIONS_NUM) if self._allowed(actcode)]
 		print(res)
 		return res
+
+	def TODO_not_been_bought(self, card_code):
+		return False if self.board[card_code] == 0 else True
 
 	def _not_been_bought(self, card_code):
 		return False if self.board[card_code][LV_I] == 0 else True
@@ -152,7 +159,7 @@ class GameState:
 		elif actcode < 95:
 			# pick gems with a single color
 			color_num = actcode - 90
-			return True if self.gems[color_num] >= 4 else False
+			return True if (self.gems[color_num] >= 4 and self.playerlist[self.playerTurn].will_not_overhold(2)) else False
 		else:
 			# pick three gems
 			color_indices = list(it.combinations([0,1,2,3,4], 3))[actcode-95]
@@ -160,12 +167,13 @@ class GameState:
 			[(0, 1, 2), (0, 1, 3), (0, 1, 4), (0, 2, 3), (0, 2, 4), (0, 3, 4), (1, 2, 3), (1, 2, 4), (1, 3, 4), (2, 3, 4)]
 			"""
 
-			if any(self.gems[list(color_indices)]) < 1:
+			if any(self.gems[list(color_indices)]) < 1 or not self.playerlist[self.playerTurn].will_not_overhold(3) :
 				return False
 			else:
 				return True	
 
 	def _convertStateToId(self):
+		# TODO: id简短特质化
 		p0_log = np.append(self.playerlist[1].gems, self.playerlist[1].bought)
 		p0_log = np.append(p0_log, self.playerlist[1].score)
 		p1_log = np.append(self.playerlist[-1].gems, self.playerlist[1].bought)
@@ -237,6 +245,12 @@ class GameState:
 		return (newState, value, done)
 
 	def render(self, logger):
+		action = self.playerlist[-self.playerTurn].recent_actcode
+		if action == None:
+			action = self.playerTurn
+		else:
+			action = actcode_to_action(action)
+		logger.info(action)
 		logger.info('-----------------')
 
 

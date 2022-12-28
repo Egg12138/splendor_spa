@@ -1,3 +1,6 @@
+"""
+为什么AlphaZero采用RestNN
+"""
 # %matplotlib inline
 
 import logging

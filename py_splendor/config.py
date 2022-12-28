@@ -2,7 +2,7 @@
 # 配置命名复制自DeepReinforcementLearning
 import numpy as np
 #### SELF PLAY
-EPISODES = 30
+EPISODES = 5
 MCTS_SIMS = 5
 MEMORY_SIZE = 30000
 TURNS_UNTIL_TAU0 = 10 # turn on which it starts playing deterministically
@@ -116,7 +116,8 @@ nobles_pool = [
 [3,0,3,3,0],
 [3,0,0,3,3],
 [3,3,0,0,3],
-];
+]
+
 cards_pool = np.array(
 [
 [ 0, 2, 1, 0, 0, 1, 0, 1],

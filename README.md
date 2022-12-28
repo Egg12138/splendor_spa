@@ -31,6 +31,29 @@
 一个QLearning机器学习方法的展示，这是我们进一步开发的基础
 
 ### MCTS&&RestNN Simplified-Splendor AI
+* 为什么不选用Alpha-Beta剪枝？
+* 选用交叉熵作为损失函数:相比于二次loss的:
+$$
+\propto \frac{(y-a)^2}{2}
+$$
+交叉熵的Loss函数:
+$$
+L = \frac{-1}{n}\Sigma{yIna+(1-y)In(1-a)}(n表示样本总数)\\
+\text{重新计算的参数w的梯度}:
+\frac{\partial L}{\partial w} = \frac{1}{n}\Sigma_x x_j(\sigma(z) - y)
+$$
+后者误差越大，梯度越大在一定训练次数下loss的降低会更好.
+`tf.nn`有`softmax`, `sparse`, `sigmoid`, `weighted`交叉熵。
+$$
+f(y_i|x)=\frac{e^{y_i}}{\Sigma_c e^{y_c}}
+$$
+
+$$
+sigmoid = \frac{1}{11+e^{-x}}
+$$
+
+于是选用`tf.nn.softmax_cross_entropy_with_logits`
+
 方便构建模型和训练和做出demo。
 
 

@@ -1,8 +1,23 @@
-# NOTICE: 可以直接复用这个
+"""
+不采用Alpha-Beta减枝？
+
+UCB(State_i) = Mean(V_i) + c \sqrt{logN / n_i}, let c = 2
+choose the largest one.
+AlphaZero MCTS没有Rollout？
+我们的AlphaZero-like MCTS Algo会有仿真环节
+p, nu, pi => pi在实际搜索决策中使用, p为NN训练出来, 
+nu --> WinnerValue
+p --> pi
+
+
+算力问题：MCTS的递归深度太深了，栈开销本身就极大，
+使用anytree会不会快？
+"""
 import numpy as np
 import logging
 import config
 
+import anytree
 from utils import setup_logger
 import loggers as lg
 
@@ -35,7 +50,8 @@ class Edge():
 					'Q': 0,
 					'P': prior,
 				}
-				
+
+
 
 class MCTS():
 
@@ -137,3 +153,4 @@ class MCTS():
 	def addNode(self, node):
 		self.tree[node.id] = node
 
+# class anyMCTS(anytree.)

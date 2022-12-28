@@ -39,8 +39,8 @@ class Agent():
 		self.state_size = state_size
 		self.action_size = action_size
 
-		self.cpuct = cpuct
 		# 不方便实践GPU和CUDA。全部都用CPU跑了
+		self.cpuct = cpuct
 
 		self.MCTSsimulations = mcts_simulations
 		self.model = model

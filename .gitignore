@@ -1,1 +1,5 @@
 ./splendor_rs/target/*
+./py_splendor/run/log./*
+./py_splendor/run/log./*/*
+./py_splendor/run_archive/*
+./py_splendor/__pycache__/*

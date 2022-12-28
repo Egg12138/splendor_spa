@@ -2,34 +2,6 @@ import numpy as np
 import logging
 
 
-class Splendor:
-	"""和GameState不同是在于Game不仅包含状态机
-	而且是涵盖了整个游戏的所有行动信息和方法的
-	"""
-	def __init__(self):
-		self.currentPlayer = 1
-		self.round = 1
-		self.gameState = GameState(
-			1, 
-			np.ones(GEM_EACH_MAX, dtype=int),
-			np.shuffle(nobles_pool)[:NOBLES],
-			Player(1), 
-			Player(2)
-			)
-		self.state_size = 20000 # 乱射的
-		self.action_size = ACTION_NUM
-
-	def reset(self):
-		self.gameState =  GameState(1, 
-			np.ones(GEM_EACH_MAX, dtype=int),
-			np.shuffle(nobles_pool)[:NOBLES],
-			Player(1), 
-			Player(2)
-			)
-		self.currentPlayer = 1
-		return self.gameState
-
-
 class Game:
 
 	def __init__(self):		
@@ -84,7 +56,7 @@ class Game:
 		return identities
 
 
-class GState():
+class GameState():
 	def __init__(self, board, playerTurn):
 		self.board = board
 		self.pieces = {'1':'X', '0': '-', '-1':'O'}
