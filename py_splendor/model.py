@@ -1,6 +1,3 @@
-"""
-为什么AlphaZero采用RestNN
-"""
 # %matplotlib inline
 
 import logging
@@ -148,7 +145,8 @@ class Residual_CNN(Gen_Model):
 		, data_format="channels_last"
 		, padding = 'same'
 		, use_bias=False
-		, activation='linear'
+		# , activation='linear'
+		,activation='relu'
 		, kernel_regularizer = regularizers.l2(self.reg_const)
 		)(x)
 
@@ -224,12 +222,13 @@ class Residual_CNN(Gen_Model):
 		return (x)
 
 	def _build_model(self):
+		# NOTICE: 在这里搭建
 
-		# 
 		main_input = Input(shape = self.input_dim, name = 'main_input')
 
 		x = self.conv_layer(main_input, self.hidden_layers[0]['filters'], self.hidden_layers[0]['kernel_size'])
 
+		# 6 hidden layers are the same
 		if len(self.hidden_layers) > 1:
 			for h in self.hidden_layers[1:]:
 				x = self.residual_layer(x, h['filters'], h['kernel_size'])
@@ -243,6 +242,7 @@ class Residual_CNN(Gen_Model):
 			loss_weights={'value_head': 0.5, 'policy_head': 0.5}	
 			)
 
+		# 不需要正则化
 		return model
 
 	def convertToModelInput(self, state):

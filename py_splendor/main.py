@@ -1,5 +1,18 @@
 # -*- coding: utf-8 -*-
 # %matplotlib inline
+"""
+PPT+标准的璀璨宝石规则。--> 尽量是图形 (P1)
+* 随机性过大
+* 不透明
+* 操作空间极大
+
+简化版 -->  (P2) 
+* 买 / p2 / p3, 没有预约，没有黄金，没有贵族
+
+1. 牌池信息直接作为棋盘，存到状态机
+2. 二值化处理 -> 游戏转化为二维棋盘的关键所在。
+
+"""
 
 import numpy as np
 np.set_printoptions(suppress=True)
@@ -42,6 +55,7 @@ else:
 
 # create an untrained neural network objects from the config file
 current_NN = Residual_CNN(config.REG_CONST, config.LEARNING_RATE, 
+            # input_dim
             (2,) + env.grid_shape,   # grid_shape我在这里设为璀璨宝石的操作空间，不包括预约，
                                      # 就有：买90张卡+5： 色宝石每个拿两个 + 10：5色宝石三异色C(5,3)组合数 = 105
                                      # 我设为一维的(1,5)。

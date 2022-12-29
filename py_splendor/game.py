@@ -14,14 +14,14 @@ class Game:
 		self.currentPlayer = 1 # 等价于playerTurn
 		self.gameState = GameState(self._build_board(), 1, Player(1), Player(-1))
 		# self.gameState = GameState(cards_pool.copy(), 1, Player(1), Player(-1))
-		# self.actionSpace = np.zeros(ACTIONS_NUM, dtype=np.int8)
-		self.action_size = np.append(np.ones(CARDS_NUM, dtype=np.int8), np.zeros(ACTIONS_NUM-CARDS_NUM, dtype=np.int8))
+		self.actionSpace = np.zeros(ACTIONS_NUM, dtype=np.int8)
+		# self.action_size = np.append(np.ones(CARDS_NUM, dtype=np.int8), np.zeros(ACTIONS_NUM-CARDS_NUM, dtype=np.int8))
 		#NOTICE: remove the deprecated field!
 		self.pieces = {'1': 'X', '0': '-', '-1':'O'}
 		self.name = 'Splendor'
-		self.input_shape = (2, 1, ACTIONS_NUM) # two players. two channels
+		self.input_shape = (2, 1, CARDS_NUM+COLORS_NUM*GEMS_EACH_MAX) # two players. two channels
 		self.state_size = len(self.gameState.binary)
-		self.grid_shape = (1, self.state_size)
+		self.grid_shape = GRID 	# 10张牌时是(5, 9)
 		self.action_size = ACTIONS_NUM
 
 	def _build_board(self):
@@ -94,7 +94,6 @@ class Player:
 
 class GameState:
 	"""我们现在将board重构，游戏将成为棋盘游戏:"""
-	# TODO 将 board 进行重构，使其更接近二值化棋盘——算的应该会快一点
 	def __init__(self, 
 		board, 
 		playerTurn,
@@ -182,7 +181,7 @@ class GameState:
 			return 0
 
 	def _checkForEndGame(self):
-		if (self.playerlist[1].reach_target() or self.playerlist[-1].reach_target()):
+		if (self.playerlist[1].reach_target() or self.playerlist[-1].reach_target()) or self.gems.sum() <= 2:
 			return 1
 		else:
 			return 0
@@ -243,8 +242,9 @@ class GameState:
 			self._lostGems(color, 2, self.playerTurn)
 		else:
 			color_indices = list(it.combinations([0,1,2,3,4], 3))[actcode-(CARDS_NUM+COLORS_NUM)]
-			gems_types = list(color_indices)
-			self._lostGems(gems_types, 1, self.playerTurn)
+			gems_types = np.array(color_indices)
+			for clr in gems_types:
+				self._lostGems(clr, 1, self.playerTurn)
 			self.playerlist[self.playerTurn].gems[list(color_indices)] += 1
 
 		self.playerlist[self.playerTurn].step_incrmnt(actcode)

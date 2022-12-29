@@ -125,6 +125,7 @@ class Agent():
 		print(f"{value_array=}, {logits_array=}, {logits=}")
 
 		#SOFTMAX
+		# BUG:  nan过多了还是
 		odds = np.exp(logits)
 		probs = odds / np.sum(odds) ###put this just before the for?
 
